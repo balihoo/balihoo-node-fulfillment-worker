@@ -6,10 +6,11 @@
   "engines": {
     "node": ">= 0.10.26"
   },
-  "main": "./lib/index",
+  "main": "./lib/nodeFulfillmentWorker",
   "dependencies": {
     "aws-sdk": "2.1.4",
-    "bluebird": "2.4.2"
+    "bluebird": "2.4.2",
+    "node-uuid": "^1.4.2"
   },
   "devDependencies": {
     "gulp": "^3.8.10",
