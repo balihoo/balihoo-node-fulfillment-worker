@@ -21,8 +21,8 @@ class SwfAdapter
     @returns {Promise}
   ###
   ensureActivityTypeRegistered: () ->
-    swf = @swf;
-    config = @config;
+    swf = @swf
+    config = @config
 
     describeParams =
       activityType:
@@ -85,4 +85,4 @@ class SwfAdapter
       reason: err.message,
       details: err.stack
 
-module.exports = SwfAdapter;
+module.exports = SwfAdapter
