@@ -10,7 +10,8 @@
   "dependencies": {
     "aws-sdk": "2.1.4",
     "bluebird": "2.4.2",
-    "node-uuid": "^1.4.2"
+    "node-uuid": "^1.4.2",
+    "dynamodb-data-types": "^0.2.7"
   },
   "devDependencies": {
     "gulp": "^3.8.10",

@@ -1,0 +1,15 @@
+{
+  "sections": {
+    "someSection": {
+      "action": {
+        "name": "beep4",
+        "version": "123"
+      },
+      "params": {
+        "brandKey": "testBrand1",
+        "locationCriteria": { "and": [{"equals": {"name": "George"}}, {"equals": {"city": "Boise"}}]}
+      },
+      "essential": true
+    }
+  }
+}
