@@ -1,6 +1,6 @@
 {
   "name": "node-fulfillment-worker",
-  "version": "0.0.1",
+  "version": "0.2.1",
   "description": "Balihoo fulfillment adapters for nodeJS-based workers",
   "author": "Balihoo",
   "engines": {
