@@ -27,21 +27,10 @@ class FulfillmentWorker
 
     @swfAdapter = new SwfAdapter(@config)
     @workerStatusReporter = new WorkerStatusReporter @config
-
-    that = @
-    process.on 'SIGTERM', ->
-      that.workerStatusReporter.updateStatus 'Terminated by host operating system'
-        .then ->
-          process.exit 0
-
-    process.on 'SIGINT', ->
-      that.workerStatusReporter.updateStatus 'Terminated by user'
-        .then ->
-          process.exit 0
+    @keepPolling = true
 
   workAsync: (workerFunc) ->
-    workerStatusReporter = @workerStatusReporter
-    swfAdapter = @swfAdapter
+    that = @
 
     parseInput = Promise.method (input) ->
       return JSON.parse(input)
@@ -49,13 +38,13 @@ class FulfillmentWorker
     handleTask = (task) ->
       if (task && task.taskToken)
         shortToken = task.taskToken.substr(task.taskToken.length - 10)
-        workerStatusReporter.updateStatus 'Processing task..' + shortToken
+        that.workerStatusReporter.updateStatus 'Processing task..' + shortToken
 
         # Parse the input into an object and do the work
         return parseInput task.input
           .then (input) ->
             ###
-            Wrap the worker  in Promise.resolve.  This allows workerFunc to return a simple value,
+            Wrap the worker call in Promise.resolve.  This allows workerFunc to return a simple value,
             a bluebird promise, or a promise from another A+ promise library.
             ###
             return Promise.resolve workerFunc(input)
@@ -64,27 +53,34 @@ class FulfillmentWorker
         return Promise.resolve()
 
     pollForWork = ->
-      workerStatusReporter.updateStatus('Polling')
+      that.workerStatusReporter.updateStatus('Polling')
       taskToken = null
 
-      return swfAdapter.pollForActivityTaskAsync()
+      return that.swfAdapter.pollForActivityTaskAsync()
         .then (task) ->
           taskToken = task.token
           return task
         .then handleTask
         .then (workResult) ->
           if (workResult)
-            return swfAdapter.respondWithWorkResult taskToken, workResult
+            return that.swfAdapter.respondWithWorkResult taskToken, workResult
         .catch error.isCancelTaskError, (err) ->
           # A CancelTaskError results in a cancelled task
-          return swfAdapter.cancelTask(taskToken, err)
+          return that.swfAdapter.cancelTask(taskToken, err)
         .catch (err) ->
           # All other errors result in a failed task
           if taskToken
-            return swfAdapter.failTask(taskToken, err)
-        .finally(pollForWork)
+            return that.swfAdapter.failTask(taskToken, err)
+        .finally ->
+          if that.keepPolling
+            return pollForWork()
+          else
+            return that.workerStatusReporter.updateStatus 'Terminated'
 
-    return swfAdapter.ensureActivityTypeRegistered()
+    return that.swfAdapter.ensureActivityTypeRegistered()
       .then pollForWork
+
+  stop: ->
+    @keepPolling = false
 
 module.exports = FulfillmentWorker
