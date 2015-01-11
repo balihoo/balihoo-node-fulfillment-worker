@@ -34,7 +34,7 @@ class WorkerStatusReporter
       activityName: @name,
       activityVersion: @version,
       specification: JSON.stringify(@specification),
-      status: 'Initializing',
+      status: 'Starting',
       resolutionHistory: JSON.stringify(@resolutionHistory),
       start: now(),
       last: now()

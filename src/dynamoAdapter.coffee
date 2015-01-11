@@ -17,11 +17,11 @@ class DynamoAdapter
         TableName: @config.tableName
 
   putItem: (item) ->
-    @dynamo.putItemAsync
+    return @dynamo.putItemAsync
       Item: toDynamoItem item
 
   updateItem: (key, partialItem) ->
-    @dynamo.updateItemAsync
+    return @dynamo.updateItemAsync
       Key: toDynamoItem key
       AttributeUpdates: toDynamoPutUpdates partialItem
 

@@ -19,11 +19,25 @@ validateConfig = (config) ->
 class FulfillmentWorker
   constructor: (@config) ->
     validateConfig @config
+
     @config.apiVersion = '2015-01-07'
+
     @config.instanceId = uuid.v4()
-    console.log(@config.instanceId)
+    console.log 'Running as instance ' + @config.instanceId
+
     @swfAdapter = new SwfAdapter(@config)
     @workerStatusReporter = new workerStatusReporter @config
+
+    that = @
+    process.on 'SIGTERM', ->
+      that.workerStatusReporter.updateStatus 'Terminated by host operating system'
+        .then ->
+          process.exit 0
+
+    process.on 'SIGINT', ->
+      that.workerStatusReporter.updateStatus 'Terminated by user'
+        .then ->
+          process.exit 0
 
   workAsync: (workerFunc) ->
     workerStatusReporter = @workerStatusReporter
@@ -34,6 +48,9 @@ class FulfillmentWorker
 
     handleTask = (task) ->
       if (task && task.taskToken)
+        shortToken = task.taskToken.substr(task.taskToken.length - 10)
+        workerStatusReporter.updateStatus 'Processing task..' + shortToken
+
         # Parse the input into an object and do the work
         return parseInput task.input
           .then (input) ->
@@ -66,7 +83,6 @@ class FulfillmentWorker
           if taskToken
             return swfAdapter.failTask(taskToken, err)
         .finally(pollForWork)
-
 
     return swfAdapter.ensureActivityTypeRegistered()
       .then pollForWork
