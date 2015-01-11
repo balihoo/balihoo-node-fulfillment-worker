@@ -46,7 +46,7 @@ class FulfillmentWorker
         # No work to be done
         return Promise.resolve()
 
-    pollForWork = () ->
+    pollForWork = ->
       workerStatusReporter.updateStatus('Polling')
       taskToken = null
 

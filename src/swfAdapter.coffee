@@ -20,7 +20,7 @@ class SwfAdapter
 
     @returns {Promise}
   ###
-  ensureActivityTypeRegistered: () ->
+  ensureActivityTypeRegistered: ->
     swf = @swf
     config = @config
 
@@ -30,7 +30,7 @@ class SwfAdapter
         version: config.version
 
     return swf.describeActivityTypeAsync describeParams
-    .catch error.isUnknownResourceError, () ->
+    .catch error.isUnknownResourceError, ->
       # Activity type doesn't exist, so register it
       return swf.registerActivityTypeAsync
         defaultTaskHeartbeatTimeout: config.defaultTaskHeartbeatTimeout || 3900,
@@ -43,7 +43,7 @@ class SwfAdapter
 
     @returns {Promise}
   ###
-  pollForActivityTaskAsync: () ->
+  pollForActivityTaskAsync: ->
     return @swf.pollForActivityTaskAsync
       taskList:
         name: this.config.name + this.config.version

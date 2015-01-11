@@ -5,7 +5,7 @@ dynamoAdapter = require('./dynamoAdapter')
 
 WORKER_STATUS_TABLE = 'fulfillment_worker_status'
 
-now = () ->
+now = ->
   return new Date().toISOString()
 
 class WorkerStatusReporter
