@@ -3,7 +3,7 @@ uuid = require 'node-uuid'
 Promise = require 'bluebird'
 error = require '../lib/error'
 SwfAdapter = require './swfAdapter'
-workerStatusReporter = require '../lib/workerStatusReporter'
+WorkerStatusReporter = require '../lib/workerStatusReporter'
 
 validateConfig = (config) ->
   if typeof config isnt 'object'
@@ -26,7 +26,7 @@ class FulfillmentWorker
     console.log 'Running as instance ' + @config.instanceId
 
     @swfAdapter = new SwfAdapter(@config)
-    @workerStatusReporter = new workerStatusReporter @config
+    @workerStatusReporter = new WorkerStatusReporter @config
 
     that = @
     process.on 'SIGTERM', ->
