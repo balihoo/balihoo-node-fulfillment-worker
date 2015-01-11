@@ -24,7 +24,7 @@ class WorkerStatusReporter
 
     @resolutionHistory = []
 
-    @dynamoAdapter = new dynamoAdapter config
+    @dynamoAdapter = new dynamoAdapter(config)
 
     # Put the entire worker status item on initialization
     @dynamoAdapter.putItem

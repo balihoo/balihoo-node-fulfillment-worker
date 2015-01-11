@@ -6,15 +6,18 @@ Promise = require 'bluebird'
 error = require './error'
 
 class DynamoAdapter
-  constructor: (@config) ->
-    @config = config
-    @dynamo = Promise.promisifyAll new aws.DynamoDB
-      apiVersion: @config.apiVersion
-      accessKeyId: @config.accessKeyId
-      secretAccessKey: @config.secretAccessKey
-      region: @config.region
+  constructor: (config) ->
+    dynamoConfig =
+      apiVersion: config.apiVersion
+      region: config.region
       params:
-        TableName: @config.tableName
+        TableName: config.tableName
+
+    if config.accessKeyId && config.secretAccessKey
+      dynamoConfig.accessKeyId = config.accessKeyId
+      dynamoConfig.secretAccessKey = config.secretAccessKey
+
+    @dynamo = Promise.promisifyAll new aws.DynamoDB(dynamoConfig)
 
   putItem: (item) ->
     return @dynamo.putItemAsync

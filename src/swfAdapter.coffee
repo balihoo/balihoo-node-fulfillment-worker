@@ -5,15 +5,19 @@ error = require './error'
 
 class SwfAdapter
   constructor: (@config) ->
-    @swf = Promise.promisifyAll new aws.SWF
-      apiVersion: config.apiVersion,
-      accessKeyId: config.accessKeyId,
-      secretAccessKey: config.secretAccessKey,
-      region: config.region,
+    swfConfig =
+      apiVersion: config.apiVersion
+      region: config.region
       params:
-        domain: config.domain,
-        name: config.name,
+        domain: config.domain
+        name: config.name
         version: config.version
+
+    if @config.accessKeyId && @config.secretAccessKey
+      swfConfig.accessKeyId = @config.accessKeyId
+      swfConfig.secretAccessKey = @config.secretAccessKey
+
+    @swf = Promise.promisifyAll new aws.SWF swfConfig
 
   ###
     Checks for the presence of the worker's activity type and if not found, registers it.
@@ -30,13 +34,13 @@ class SwfAdapter
         version: config.version
 
     return swf.describeActivityTypeAsync describeParams
-    .catch error.isUnknownResourceError, ->
-      # Activity type doesn't exist, so register it
-      return swf.registerActivityTypeAsync
-        defaultTaskHeartbeatTimeout: config.defaultTaskHeartbeatTimeout || 3900,
-        defaultTaskScheduleToCloseTimeout: config.defaultTaskScheduleToCloseTimeout || 3600,
-        defaultTaskScheduleToStartTimeout: config.defaultTaskScheduleToStartTimeout || 300,
-        defaultTaskStartToCloseTimeout: config.defaultTaskStartToCloseTimeout || 600
+      .catch error.isUnknownResourceError, ->
+        # Activity type doesn't exist, so register it
+        return swf.registerActivityTypeAsync
+          defaultTaskHeartbeatTimeout: config.defaultTaskHeartbeatTimeout || 3900,
+          defaultTaskScheduleToCloseTimeout: config.defaultTaskScheduleToCloseTimeout || 3600,
+          defaultTaskScheduleToStartTimeout: config.defaultTaskScheduleToStartTimeout || 300,
+          defaultTaskStartToCloseTimeout: config.defaultTaskStartToCloseTimeout || 600
 
   ###
     Polls for an activity task

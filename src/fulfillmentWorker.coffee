@@ -17,16 +17,14 @@ validateConfig = (config) ->
     throw new error.ConfigurationMissingError(missingProperties)
 
 class FulfillmentWorker
-  constructor: (@config) ->
-    validateConfig @config
+  constructor: (config) ->
+    validateConfig config
 
-    @config.apiVersion = '2015-01-07'
+    config.apiVersion = '2015-01-07'
+    config.instanceId = uuid.v4()
 
-    @config.instanceId = uuid.v4()
-    console.log 'Running as instance ' + @config.instanceId
-
-    @swfAdapter = new SwfAdapter(@config)
-    @workerStatusReporter = new WorkerStatusReporter @config
+    @swfAdapter = new SwfAdapter(config)
+    @workerStatusReporter = new WorkerStatusReporter(config)
     @keepPolling = true
 
   workAsync: (workerFunc) ->
@@ -75,12 +73,12 @@ class FulfillmentWorker
           if that.keepPolling
             return pollForWork()
           else
-            return that.workerStatusReporter.updateStatus 'Terminated'
 
     return that.swfAdapter.ensureActivityTypeRegistered()
       .then pollForWork
 
   stop: ->
     @keepPolling = false
+    return @workerStatusReporter.updateStatus 'Terminated'
 
 module.exports = FulfillmentWorker
