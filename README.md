@@ -7,11 +7,11 @@ Balihoo Node.js Fulfillment Worker Library
 ## Installation
   Make sure you have a recent version of node and npm installed and
     then run:
-    ```shellscript
+    ```
     npm install balihoo-fulfillment-worker
     ```
 ## Usage
-  
+
 
 
 
