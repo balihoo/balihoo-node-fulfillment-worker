@@ -28,15 +28,13 @@ class FulfillmentWorker
     @keepPolling = true
 
   workAsync: (workerFunc) ->
-    that = @
-
     parseInput = Promise.method (input) ->
       return JSON.parse(input)
 
-    handleTask = (task) ->
+    handleTask = (task) =>
       if (task && task.taskToken)
         shortToken = task.taskToken.substr(task.taskToken.length - 10)
-        that.workerStatusReporter.updateStatus 'Processing task..' + shortToken
+        @workerStatusReporter.updateStatus 'Processing task..' + shortToken
 
         # Parse the input into an object and do the work
         return parseInput task.input
@@ -50,31 +48,31 @@ class FulfillmentWorker
         # No work to be done
         return Promise.resolve()
 
-    pollForWork = ->
-      that.workerStatusReporter.updateStatus('Polling')
+    pollForWork = =>
+      @workerStatusReporter.updateStatus('Polling')
       taskToken = null
 
-      return that.swfAdapter.pollForActivityTaskAsync()
+      return @swfAdapter.pollForActivityTaskAsync()
         .then (task) ->
           taskToken = task.token
           return task
         .then handleTask
-        .then (workResult) ->
+        .then (workResult) =>
           if (workResult)
-            return that.swfAdapter.respondWithWorkResult taskToken, workResult
-        .catch error.isCancelTaskError, (err) ->
+            return @swfAdapter.respondWithWorkResult taskToken, workResult
+        .catch error.isCancelTaskError, (err) =>
           # A CancelTaskError results in a cancelled task
-          return that.swfAdapter.cancelTask(taskToken, err)
-        .catch (err) ->
+          return @swfAdapter.cancelTask(taskToken, err)
+        .catch (err) =>
           # All other errors result in a failed task
           if taskToken
-            return that.swfAdapter.failTask(taskToken, err)
-        .finally ->
-          if that.keepPolling
+            return @swfAdapter.failTask(taskToken, err)
+        .finally =>
+          if @keepPolling
             return pollForWork()
           else
 
-    return that.swfAdapter.ensureActivityTypeRegistered()
+    return @swfAdapter.ensureActivityTypeRegistered()
       .then pollForWork
 
   stop: ->

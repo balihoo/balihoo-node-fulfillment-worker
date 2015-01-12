@@ -19,7 +19,7 @@ gulp.task 'compile', ->
     .pipe coffee()
     .pipe gulp.dest('lib/')
 
-gulp.task 'test', ->
+gulp.task 'test', ['compile'], ->
   return gulp.src sources.tests
     .pipe mocha()
 

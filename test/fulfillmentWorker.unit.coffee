@@ -60,17 +60,19 @@ describe 'FulfillmentWorker unit tests', ->
     it 'Adds an API version to config', ->
       sinon.stub aws, 'DynamoDB', mocks.DynamoDB
 
-      worker = new FulfillmentWorker(config)
+      new FulfillmentWorker(config)
       assert.ok config.apiVersion
       assert typeof config.apiVersion is 'string'
+
       aws.DynamoDB.restore()
 
     it 'Adds an instance ID to config', ->
       sinon.stub aws, 'DynamoDB', mocks.DynamoDB
 
-      worker = new FulfillmentWorker(config)
+      new FulfillmentWorker(config)
       assert.ok config.instanceId
       assert typeof config.instanceId is 'string'
+
       aws.DynamoDB.restore()
 
 
