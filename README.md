@@ -11,7 +11,7 @@ Make sure you have a recent version of node and npm installed and then run:
 ## Usage
 Simply instantiate a worker with configuration and a function to be called when work is available:
   
-    var BalihooFulfillmentWorker = require(\'balihoo-fulfillment-worker\');
+    var BalihooFulfillmentWorker = require('balihoo-fulfillment-worker');
       
     var myWorkFunction = function (input) { 
         return input.x + input.y; 
