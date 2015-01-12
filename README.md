@@ -20,6 +20,14 @@ Simply instantiate a worker with configuration and a function to be called when 
     var worker = new BalihooFulfillmentWorker(config);
     worker.workAsync(myWorkFunction);
     
+    process.on('SIGINT', function() {
+        worker.stop();
+    });
+    
+    process.on('SIGTERM', function() {
+        worker.stop();
+    });
+    
 Need to do some work asynchronously?  Simply return a promise (we use bluebird, but any A+ promise will do).
 
 ## Configuration
