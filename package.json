@@ -1,7 +1,7 @@
 {
-  "name": "node-fulfillment-worker",
-  "version": "0.2.3",
-  "description": "Balihoo fulfillment adapters for nodeJS-based workers",
+  "name": "balihoo-fulfillment-worker",
+  "version": "0.2.4",
+  "description": "Balihoo fulfillment connectivity library",
   "author": "Balihoo",
   "engines": {
     "node": ">= 0.10.26"

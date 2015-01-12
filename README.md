@@ -1,2 +1,5 @@
 # node-fulfillment-worker
-Balihoo fulfillment adapters for nodeJS-based workers
+Balihoo fulfillment connectivity for node.js based workers
+
+
+
