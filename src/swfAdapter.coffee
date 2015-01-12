@@ -37,10 +37,10 @@ class SwfAdapter
       .catch error.isUnknownResourceError, ->
         # Activity type doesn't exist, so register it
         return swf.registerActivityTypeAsync
-          defaultTaskHeartbeatTimeout: config.defaultTaskHeartbeatTimeout || 3900,
-          defaultTaskScheduleToCloseTimeout: config.defaultTaskScheduleToCloseTimeout || 3600,
-          defaultTaskScheduleToStartTimeout: config.defaultTaskScheduleToStartTimeout || 300,
-          defaultTaskStartToCloseTimeout: config.defaultTaskStartToCloseTimeout || 600
+          defaultTaskHeartbeatTimeout: config.defaultTaskHeartbeatTimeout || '3900',
+          defaultTaskScheduleToCloseTimeout: config.defaultTaskScheduleToCloseTimeout || '3600',
+          defaultTaskScheduleToStartTimeout: config.defaultTaskScheduleToStartTimeout || '300',
+          defaultTaskStartToCloseTimeout: config.defaultTaskStartToCloseTimeout || '600'
 
   ###
     Polls for an activity task

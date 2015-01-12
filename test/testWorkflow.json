@@ -2,7 +2,7 @@
   "sections": {
     "someSection": {
       "action": {
-        "name": "beep4",
+        "name": "beep5",
         "version": "123"
       },
       "params": {

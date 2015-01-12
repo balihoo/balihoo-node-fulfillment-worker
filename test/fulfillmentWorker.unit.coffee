@@ -66,12 +66,12 @@ describe 'FulfillmentWorker unit tests', ->
 
       aws.DynamoDB.restore()
 
-    it 'Adds an instance ID to config', ->
+    it 'Creates an instance ID', ->
       sinon.stub aws, 'DynamoDB', mocks.DynamoDB
 
-      new FulfillmentWorker(config)
-      assert.ok config.instanceId
-      assert typeof config.instanceId is 'string'
+      worker = new FulfillmentWorker(config)
+      assert.ok worker.instanceId
+      assert typeof worker.instanceId is 'string'
 
       aws.DynamoDB.restore()
 

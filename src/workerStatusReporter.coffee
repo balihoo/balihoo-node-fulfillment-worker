@@ -9,10 +9,9 @@ now = ->
   return new Date().toISOString()
 
 class WorkerStatusReporter
-  constructor: (config) ->
+  constructor: (@instanceId, config) ->
     config.tableName = WORKER_STATUS_TABLE
 
-    @instanceId = config.instanceId
     @key = { instance: @instanceId }
     @hostAddress = os.hostname()
     @domain = config.domain
@@ -44,7 +43,10 @@ class WorkerStatusReporter
       status: status,
       last: now()
 
-  addResult: (resolution, details) ->
+  addResult: (resolution, result) ->
+    details = JSON.stringify result
+      .substr 0, 30
+
     @resolutionHistory.push
       resolution: resolution,
       when: now(),
