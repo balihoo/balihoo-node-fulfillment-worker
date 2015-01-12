@@ -1,9 +1,9 @@
 'use strict'
 uuid = require 'node-uuid'
 Promise = require 'bluebird'
-error = require '../lib/error'
+error = require './error'
 SwfAdapter = require './swfAdapter'
-WorkerStatusReporter = require '../lib/workerStatusReporter'
+WorkerStatusReporter = require './workerStatusReporter'
 
 validateConfig = (config) ->
   if typeof config isnt 'object'
@@ -77,6 +77,7 @@ class FulfillmentWorker
             return pollForWork()
 
     return @swfAdapter.ensureActivityTypeRegistered()
+      .then @workerStatusReporter.init
       .then pollForWork
 
   stop: ->

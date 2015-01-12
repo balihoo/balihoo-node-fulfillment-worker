@@ -1,7 +1,7 @@
 'use strict'
-os = require('os')
-Promise = require('bluebird')
-dynamoAdapter = require('./dynamoAdapter')
+os = require 'os'
+Promise = require 'bluebird'
+dynamoAdapter = require './dynamoAdapter'
 
 WORKER_STATUS_TABLE = 'fulfillment_worker_status'
 
@@ -25,8 +25,8 @@ class WorkerStatusReporter
 
     @dynamoAdapter = new dynamoAdapter(config)
 
-    # Put the entire worker status item on initialization
-    @dynamoAdapter.putItem
+  init: ->
+    return @dynamoAdapter.putItem
       instance: @instanceId,
       hostAddress: os.hostname(),
       domain: @domain,
@@ -37,7 +37,7 @@ class WorkerStatusReporter
       resolutionHistory: JSON.stringify(@resolutionHistory),
       start: now(),
       last: now()
-
+      
   updateStatus: (status) ->
     return @dynamoAdapter.updateItem @key,
       status: status,
