@@ -5,7 +5,7 @@ sinon = require 'sinon'
 FulfillmentWorker = require '../lib/fulfillmentWorker'
 error = require '../lib/error'
 mockDynamoDB = require './mocks/mockDynamoDB'
-
+mockSWF = require './mocks/mockSWF'
 config = undefined
 
 testRequiresConfigParameter = (config, propName) ->
@@ -28,6 +28,10 @@ describe 'FulfillmentWorker unit tests', ->
       domain: 'fakeDomain'
       name: 'fakeWorkerName'
       version: 'fakeWorkerVersion'
+      defaultTaskHeartbeatTimeout: 4000
+      defaultTaskScheduleToCloseTimeout: 400
+      defaultTaskScheduleToStartTimeout: 700
+      defaultTaskStartToCloseTimeout: 4700
 
   describe 'constructor', ->
     it 'Requires a config', ->
@@ -69,7 +73,7 @@ describe 'FulfillmentWorker unit tests', ->
       assert typeof worker.instanceId is 'string'
 
     it 'Creates an AWS DynamoDB instance', ->
-      sinon.stub aws, 'DynamoDB', mockDynamoDB.mockConstructor
+      sinon.stub aws, 'DynamoDB', mockDynamoDB
       worker = new FulfillmentWorker(config)
 
       expectedConfig =
@@ -81,14 +85,53 @@ describe 'FulfillmentWorker unit tests', ->
           TableName: config.tableName
 
       assert aws.DynamoDB.calledOnce
-      assert.deepEqual expectedConfig, mockDynamoDB.config
+      assert.deepEqual expectedConfig, worker.workerStatusReporter.dynamoAdapter.dynamo.config
       aws.DynamoDB.restore()
-      mockDynamoDB.reset()
 
-#  describe 'workAsync', ->
-#    it 'checks for an existing ActivityType', ->
-#      sinon.stub aws, ''
-#      worker = new FulfillmentWorker(config)
-#
-#      worker.workAsync -> {}
+    it 'Creates an AWS SWF instance', ->
+      sinon.stub aws, 'SWF', mockSWF
+      worker = new FulfillmentWorker(config)
+
+      expectedConfig =
+        accessKeyId: config.accessKeyId
+        secretAccessKey: config.secretAccessKey
+        apiVersion: config.apiVersion
+        region: config.region
+        params:
+          domain: config.domain
+          name: config.name
+          version: config.version
+
+      assert aws.SWF.calledOnce
+      assert.deepEqual expectedConfig, worker.swfAdapter.swf.config
+      aws.SWF.restore()
+
+  describe 'workAsync', ->
+    beforeEach ->
+      sinon.stub aws, 'DynamoDB', mockDynamoDB
+      sinon.stub aws, 'SWF', mockSWF
+
+    it 'checks for an existing ActivityType', ->
+      expectedParams =
+        activityType:
+          name: config.name
+          version: config.version
+
+      worker = new FulfillmentWorker(config)
+      worker.workAsync -> {}
+
+      assert worker.swfAdapter.swf.describeActivityType.calledOnce
+      assert worker.swfAdapter.swf.describeActivityType.calledWith expectedParams
+
+    context 'when the activity type is not found', ->
+      it 'registers the activity type', ->
+        expectedParams =
+          defaultTaskHeartbeatTimeout: config.defaultTaskHeartbeatTimeout
+          defaultTaskScheduleToCloseTimeout: config.defaultTaskScheduleToCloseTimeout
+          defaultTaskScheduleToStartTimeout: config.defaultTaskScheduleToStartTimeout
+          defaultTaskStartToCloseTimeout: config.defaultTaskStartToCloseTimeout
+
+    afterEach ->
+      aws.DynamoDB.restore()
+      aws.SWF.restore()
 
