@@ -2,7 +2,7 @@ Balihoo Node.js Fulfillment Worker Library
 ==========================================
 
 ## Version
-0.2.6
+0.2.8
 
 ## Installation
 Make sure you have a recent version of node and npm installed and then run:
@@ -37,7 +37,11 @@ Configuration is supplied as an object which must contain the following:
   * domain: The Simple WorkFlow domain.  Balihoo will provide this value.
   * name: A string containing the name of your worker
   * version: A string containing the version of your worker
-  
+
+You may optionally specify a schema for input and output:
+  * parameterSchema: An object representing a [JSON schema](http://json-schema.org/) that the task must match before being passed to your worker
+  * resultSchema: An object representing a [JSON schema](http://json-schema.org/) that will be used to validate the result from your worker
+   
 Additionally, some optional parameters which control the default timeouts for this worker can be specified.  Note that these values will only be used if the task creator does not specify values.
   * defaultTaskHeartbeatTimeout: The default maximum time before the worker must report progress
   * defaultTaskScheduleToCloseTimeout: The default maximum duration for a task
