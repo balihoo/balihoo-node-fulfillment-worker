@@ -33,13 +33,13 @@ Need to do some work asynchronously?  Simply return a promise (we use bluebird, 
 
 ## Configuration
 Configuration is supplied as an object which must contain the following:
-  * region (required): The AWS region.  Balihoo will provide this value.
-  * domain (required): The Simple WorkFlow domain.  Balihoo will provide this value.
-  * name (required): A string containing the name of your worker
-  * version (required): A string containing the version of your worker
+  * region: The AWS region.  Balihoo will provide this value.
+  * domain: The Simple WorkFlow domain.  Balihoo will provide this value.
+  * name: A string containing the name of your worker
+  * version: A string containing the version of your worker
   
 Additionally, some optional parameters which control the default timeouts for this worker can be specified.  Note that these values will only be used if the task creator does not specify values.
-  * defaultTaskHeartbeatTimeout (optional): The default maximum time before the worker must report progress
-  * defaultTaskScheduleToCloseTimeout (optional): The default maximum duration for a task
-  * defaultTaskScheduleToStartTimeout (optional): The default maximum duration that a task can wait before being assigned to a worker
-  * defaultTaskStartToCloseTimeout (optional): The default maximum duration that the worker can take to process a task
+  * defaultTaskHeartbeatTimeout: The default maximum time before the worker must report progress
+  * defaultTaskScheduleToCloseTimeout: The default maximum duration for a task
+  * defaultTaskScheduleToStartTimeout: The default maximum duration that a task can wait before being assigned to a worker
+  * defaultTaskStartToCloseTimeout: The default maximum duration that the worker can take to process a task
