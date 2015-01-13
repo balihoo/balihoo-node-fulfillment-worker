@@ -2,7 +2,7 @@ Balihoo Node.js Fulfillment Worker Library
 ==========================================
 
 ## Version
-0.2.5
+0.2.6
 
 ## Installation
 Make sure you have a recent version of node and npm installed and then run:
@@ -32,8 +32,14 @@ Simply instantiate a worker with configuration and a function to be called when 
 Need to do some work asynchronously?  Simply return a promise (we use bluebird, but any A+ promise will do).
 
 ## Configuration
-Configuration is supplied as an object which can contain the following:
+Configuration is supplied as an object which must contain the following:
   * region (required): The AWS region.  Balihoo will provide this value.
   * domain (required): The Simple WorkFlow domain.  Balihoo will provide this value.
   * name (required): A string containing the name of your worker
   * version (required): A string containing the version of your worker
+  
+Additionally, some optional parameters which control the default timeouts for this worker can be specified.  Note that these values will only be used if the task creator does not specify values.
+  * defaultTaskHeartbeatTimeout (optional): The default maximum time before the worker must report progress
+  * defaultTaskScheduleToCloseTimeout (optional): The default maximum duration for a task
+  * defaultTaskScheduleToStartTimeout (optional): The default maximum duration that a task can wait before being assigned to a worker
+  * defaultTaskStartToCloseTimeout (optional): The default maximum duration that the worker can take to process a task
