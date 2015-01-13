@@ -54,8 +54,7 @@ class FulfillmentWorker
       return @swfAdapter.pollForActivityTaskAsync()
         .then (task) =>
           @taskToken = task.taskToken
-          return task
-        .then handleTask
+          return handleTask task
         .then (workResult) =>
           if (workResult)
             return @swfAdapter.respondWithWorkResult @taskToken, workResult
@@ -77,7 +76,8 @@ class FulfillmentWorker
             return pollForWork()
 
     return @swfAdapter.ensureActivityTypeRegistered()
-      .then @workerStatusReporter.init
+      .then =>
+        return @workerStatusReporter.init()
       .then pollForWork
 
   stop: ->

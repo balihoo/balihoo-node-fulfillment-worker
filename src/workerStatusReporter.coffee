@@ -27,15 +27,15 @@ class WorkerStatusReporter
 
   init: ->
     return @dynamoAdapter.putItem
-      instance: @instanceId,
-      hostAddress: os.hostname(),
-      domain: @domain,
-      activityName: @name,
-      activityVersion: @version,
-      specification: JSON.stringify(@specification),
-      status: 'Starting',
-      resolutionHistory: JSON.stringify(@resolutionHistory),
-      start: now(),
+      instance: @instanceId
+      hostAddress: os.hostname()
+      domain: @domain
+      activityName: @name
+      activityVersion: @version
+      specification: JSON.stringify(@specification)
+      status: 'Starting'
+      resolutionHistory: JSON.stringify(@resolutionHistory)
+      start: now()
       last: now()
       
   updateStatus: (status) ->

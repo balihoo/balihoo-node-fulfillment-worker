@@ -1,12 +1,13 @@
 sinon = require 'sinon'
 
+mockFunc = ->
+  return sinon.spy (item, callback) ->
+    callback null, true
+
 class mockDynamoDB
   constructor: (@config) ->
 
-  putItem: sinon.spy ->
-    return true
-
-  updateItem: sinon.spy ->
-    return true
+  putItem: mockFunc()
+  updateItem: mockFunc()
 
 module.exports = mockDynamoDB

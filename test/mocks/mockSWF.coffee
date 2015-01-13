@@ -1,24 +1,17 @@
 sinon = require 'sinon'
 
+mockFunc = ->
+  return sinon.spy (item, callback) ->
+    callback null, true
+
 class mockSWF
   constructor: (@config) ->
 
-  describeActivityType: sinon.spy ->
-    return true
-
-  registerActivityType: sinon.spy ->
-    return true
-
-  pollForActivityTask: sinon.spy ->
-    return true
-
-  respondActivityTaskCompleted: sinon.spy ->
-    return true
-
-  respondActivityTaskCanceled: sinon.spy ->
-    return true
-
-  respondActivityTaskFailed: sinon.spy ->
-    return true
+  describeActivityType: mockFunc()
+  registerActivityType: mockFunc()
+  pollForActivityTask: mockFunc()
+  respondActivityTaskCompleted: mockFunc()
+  respondActivityTaskCanceled: mockFunc()
+  respondActivityTaskFailed: mockFunc()
 
 module.exports = mockSWF
