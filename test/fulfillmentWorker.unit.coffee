@@ -2,6 +2,7 @@
 assert = require 'assert'
 aws = require 'aws-sdk'
 sinon = require 'sinon'
+Promise = require 'bluebird'
 FulfillmentWorker = require '../lib/fulfillmentWorker'
 error = require '../lib/error'
 mockDynamoDB = require './mocks/mockDynamoDB'
@@ -107,29 +108,210 @@ describe 'FulfillmentWorker unit tests', ->
       aws.SWF.restore()
 
   describe 'workAsync', ->
+    worker = null
+    
     beforeEach ->
       sinon.stub aws, 'DynamoDB', mockDynamoDB
       sinon.stub aws, 'SWF', mockSWF
-
-    it 'checks for an existing ActivityType', ->
-      expectedParams =
-        activityType:
-          name: config.name
-          version: config.version
-
       worker = new FulfillmentWorker(config)
-      worker.workAsync -> {}
 
-      assert worker.swfAdapter.swf.describeActivityType.calledOnce
-      assert worker.swfAdapter.swf.describeActivityType.calledWith expectedParams
-
-    context 'when the activity type is not found', ->
-      it 'registers the activity type', ->
+    context 'prior to polling for work', ->
+      it 'checks for an existing ActivityType', (done) ->
         expectedParams =
-          defaultTaskHeartbeatTimeout: config.defaultTaskHeartbeatTimeout
-          defaultTaskScheduleToCloseTimeout: config.defaultTaskScheduleToCloseTimeout
-          defaultTaskScheduleToStartTimeout: config.defaultTaskScheduleToStartTimeout
-          defaultTaskStartToCloseTimeout: config.defaultTaskStartToCloseTimeout
+          activityType:
+            name: config.name
+            version: config.version
+  
+        worker.swfAdapter.swf.pollForActivityTask = ->
+          assert worker.swfAdapter.swf.describeActivityType.calledOnce
+          assert worker.swfAdapter.swf.describeActivityType.calledWith expectedParams
+          worker.stop()
+          .then ->
+            done()
+
+        worker.workAsync -> {}
+  
+      context 'when the activity type is not found', ->
+        it 'registers the activity type', (done) ->
+          expectedParams =
+            defaultTaskHeartbeatTimeout: config.defaultTaskHeartbeatTimeout
+            defaultTaskScheduleToCloseTimeout: config.defaultTaskScheduleToCloseTimeout
+            defaultTaskScheduleToStartTimeout: config.defaultTaskScheduleToStartTimeout
+            defaultTaskStartToCloseTimeout: config.defaultTaskStartToCloseTimeout
+  
+          worker.swfAdapter.swf.describeActivityType = sinon.spy ->
+            err = Error('Loud noises!')
+            err.cause =
+              code: 'UnknownResourceFault'
+            throw err
+            
+          worker.swfAdapter.swf.pollForActivityTask = ->
+            assert worker.swfAdapter.swf.registerActivityType.calledOnce
+            assert worker.swfAdapter.swf.registerActivityType.calledWith expectedParams
+            worker.stop()
+            .then ->
+              done()
+          
+          worker.workAsync -> {}
+            
+      context 'when an error other than UnknownResourceFault occurs', ->
+        it 'rejects the promise with the error', (done) ->
+          fakeError = new Error('Loud noises!')
+          
+          worker.swfAdapter.swf.describeActivityType = sinon.spy ->
+            throw fakeError
+
+          promise = worker.workAsync -> {}
+          promise
+          .catch (err) ->
+            assert.strictEqual fakeError, err
+            done()
+
+    context 'when polling for work', ->
+      it 'uses worker name + version as the task list', (done) ->
+        expectedParams =
+          taskList:
+            name: config.name + config.version
+            
+        worker.swfAdapter.swf.pollForActivityTask = sinon.spy (params) ->
+          assert.deepEqual(expectedParams, params)
+          worker.stop()
+          .then ->
+            done()
+
+        worker.workAsync -> {}
+      
+      context 'when there is no work to be done', ->
+        it 'polls again', (done) ->
+          callCount = 0
+          worker.swfAdapter.swf.pollForActivityTask = (params, callback) ->
+            callCount++
+
+            if callCount == 2
+              worker.stop()
+                .then ->
+                  done()
+            
+            callback null, {}
+
+          worker.workAsync -> {}
+
+      context 'when there is work to be done', ->
+        expectedInput = null
+        expectedToken = null
+        expectedResult = null
+        err = null
+        
+        beforeEach ->
+          expectedToken = 'fakeToken'
+          
+          expectedInput =
+            someKey: 'someValue'
+            anotherKey:
+              aSubKey: 1
+
+          expectedResult =
+            something: 'weeeee!'
+            somethingElse: 5
+
+          fakeTask =
+            taskToken: expectedToken
+            input: JSON.stringify expectedInput
+
+          err = new Error('Loud noises!')
+
+          worker.swfAdapter.swf.pollForActivityTask = (params, callback) ->
+            callback null, fakeTask
+            
+        it 'invokes the provided worker function with the task input', (done) ->
+          worker.workAsync (input) ->
+            assert.deepEqual expectedInput, input
+            
+            worker.stop()
+            .then ->
+              done()
+          
+          context 'when the worker function returns a result', ->
+            it 'returns the result to simple workflow', (done) ->
+              worker.swfAdapter.swf.respondActivityTaskCompleted = (params) ->
+                assert.strictEqual expectedToken, params.taskToken
+                assert.strictEqual JSON.stringify(expectedResult), params.result
+                worker.stop()
+                .then ->
+                  done()
+                  
+              worker.workAsync ->
+                return expectedResult
+
+          context 'when the worker function returns a promise that resolves', ->
+            it 'returns the result to simple workflow', (done) ->
+              worker.swfAdapter.swf.respondActivityTaskCompleted = (params) ->
+                assert.strictEqual expectedToken, params.taskToken
+                assert.strictEqual JSON.stringify(expectedResult), params.result
+                worker.stop()
+                .then ->
+                  done()
+
+              worker.workAsync ->
+                return Promise.resolve expectedResult
+
+          context 'when the worker function returns a promise that rejects', ->
+            it 'fails the task', (done) ->
+              worker.swfAdapter.swf.respondActivityTaskFailed = (params) ->
+                assert.strictEqual expectedToken, params.taskToken
+                assert.strictEqual err.message, params.reason
+                assert.ok params.details
+                
+                worker.stop()
+                .then ->
+                  done()
+
+              worker.workAsync ->
+                return Promise.reject err
+                
+          context 'when the worker returns a promise which rejects with a CancelTaskError', ->
+            it 'cancels the task', (done) ->
+              cancelTaskError = new error.CancelTaskError(err)
+
+              worker.swfAdapter.swf.respondActivityTaskCanceled = (params) ->
+                assert.strictEqual expectedToken, params.taskToken
+                assert.strictEqual err.message, params.details
+
+                worker.stop()
+                .then ->
+                  done()
+
+              worker.workAsync ->
+                return Promise.reject cancelTaskError
+                
+          context 'when the worker function throws an error', ->
+            it 'fails the task', (done) ->
+              worker.swfAdapter.swf.respondActivityTaskFailed = (params) ->
+                assert.strictEqual expectedToken, params.taskToken
+                assert.strictEqual err.message, params.reason
+                assert.ok params.details
+
+                worker.stop()
+                .then ->
+                  done()
+
+              worker.workAsync ->
+                throw err
+
+          context 'when the worker function throws a CancelTaskError', ->
+            it 'cancels the task', (done) ->              
+              cancelTaskError = new error.CancelTaskError(err)
+
+              worker.swfAdapter.swf.respondActivityTaskCanceled = (params) ->
+                assert.strictEqual expectedToken, params.taskToken
+                assert.strictEqual err.message, params.details
+
+                worker.stop()
+                .then ->
+                  done()
+
+              worker.workAsync ->
+                throw cancelTaskError
 
     afterEach ->
       aws.DynamoDB.restore()
