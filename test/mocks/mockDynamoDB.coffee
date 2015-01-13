@@ -1,13 +1,13 @@
 sinon = require 'sinon'
 
-mockFunc = ->
+nodeLikeSuccessSpy = ->
   return sinon.spy (item, callback) ->
     callback null, true
 
 class mockDynamoDB
   constructor: (@config) ->
 
-  putItem: mockFunc()
-  updateItem: mockFunc()
+  putItem: nodeLikeSuccessSpy()
+  updateItem: nodeLikeSuccessSpy()
 
 module.exports = mockDynamoDB
