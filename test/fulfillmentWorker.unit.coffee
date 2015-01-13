@@ -1,10 +1,7 @@
 'use strict'
 assert = require 'assert'
-aws = require 'aws-sdk'
-sinon = require 'sinon'
 FulfillmentWorker = require '../lib/fulfillmentWorker'
 error = require '../lib/error'
-mocks = require './mocks'
 config = undefined
 
 testRequiresConfigParameter = (config, propName) ->
@@ -58,21 +55,12 @@ describe 'FulfillmentWorker unit tests', ->
       testRequiresConfigParameter config, 'version'
 
     it 'Adds an API version to config', ->
-      sinon.stub aws, 'DynamoDB', mocks.DynamoDB
-
       new FulfillmentWorker(config)
       assert.ok config.apiVersion
       assert typeof config.apiVersion is 'string'
 
-      aws.DynamoDB.restore()
-
     it 'Creates an instance ID', ->
-      sinon.stub aws, 'DynamoDB', mocks.DynamoDB
-
       worker = new FulfillmentWorker(config)
       assert.ok worker.instanceId
       assert typeof worker.instanceId is 'string'
-
-      aws.DynamoDB.restore()
-
-
+      

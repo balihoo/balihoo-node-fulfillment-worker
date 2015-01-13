@@ -16,7 +16,7 @@ gulp.task 'lint', ->
 
 gulp.task 'compile', ->
   return gulp.src(sources.coffee)
-    .pipe coffee()
+    .pipe coffee({ bare: true })
     .pipe gulp.dest('lib/')
 
 gulp.task 'test', ['compile'], ->

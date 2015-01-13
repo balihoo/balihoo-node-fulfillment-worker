@@ -18,8 +18,5 @@ exports.ConfigurationMissingError = ConfigurationMissingError
 exports.ConfigurationMustBeObjectError = ConfigurationMustBeObjectError
 exports.CancelTaskError = CancelTaskError
 
-exports.isCancelTaskError = (err) ->
-  err instanceof CancelTaskError
-
 exports.isUnknownResourceError = (err) ->
   err and err.cause and err.cause.code is 'UnknownResourceFault'

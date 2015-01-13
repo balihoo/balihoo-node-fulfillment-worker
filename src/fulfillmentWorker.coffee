@@ -61,7 +61,7 @@ class FulfillmentWorker
             return @swfAdapter.respondWithWorkResult @taskToken, workResult
               .then =>
                 @workerStatusReporter.addResult 'Completed', workResult
-        .catch error.isCancelTaskError, (err) =>
+        .catch error.CancelTaskError, (err) =>
           # A CancelTaskError results in a cancelled task
           return @swfAdapter.cancelTask @taskToken, err
             .then =>
