@@ -1,7 +1,11 @@
 'use strict'
 assert = require 'assert'
+aws = require 'aws-sdk'
+sinon = require 'sinon'
 FulfillmentWorker = require '../lib/fulfillmentWorker'
 error = require '../lib/error'
+mockDynamoDB = require './mocks/mockDynamoDB'
+
 config = undefined
 
 testRequiresConfigParameter = (config, propName) ->
@@ -63,4 +67,28 @@ describe 'FulfillmentWorker unit tests', ->
       worker = new FulfillmentWorker(config)
       assert.ok worker.instanceId
       assert typeof worker.instanceId is 'string'
-      
+
+    it 'Creates an AWS DynamoDB instance', ->
+      sinon.stub aws, 'DynamoDB', mockDynamoDB.mockConstructor
+      worker = new FulfillmentWorker(config)
+
+      expectedConfig =
+        accessKeyId: config.accessKeyId
+        secretAccessKey: config.secretAccessKey
+        apiVersion: config.apiVersion
+        region: config.region
+        params:
+          TableName: config.tableName
+
+      assert aws.DynamoDB.calledOnce
+      assert.deepEqual expectedConfig, mockDynamoDB.config
+      aws.DynamoDB.restore()
+      mockDynamoDB.reset()
+
+#  describe 'workAsync', ->
+#    it 'checks for an existing ActivityType', ->
+#      sinon.stub aws, ''
+#      worker = new FulfillmentWorker(config)
+#
+#      worker.workAsync -> {}
+
