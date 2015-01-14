@@ -1,8 +1,7 @@
 'use strict'
 class ConfigurationMissingError extends Error
-  constructor: (missingProps) ->
-    @missingProperties = missingProps
-    @message = 'Configuration object is missing the following required properties: ' + missingProps.toString() + '.'
+  constructor: (@missingProperties) ->
+    @message = 'Configuration object is missing the following required properties: ' + @missingProperties.toString() + '.'
 
 class ConfigurationMustBeObjectError extends Error
   constructor: (type) ->

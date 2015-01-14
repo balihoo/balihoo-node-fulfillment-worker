@@ -18,7 +18,7 @@ class WorkerStatusReporter
     @name = config.name
     @version = config.version
     @specification =
-      parameters: config.parameterSchema || {},
+      parameters: config.parameterSchema || {}
       result: config.resultSchema || {}
 
     @resolutionHistory = []
@@ -40,7 +40,7 @@ class WorkerStatusReporter
       
   updateStatus: (status) ->
     return @dynamoAdapter.updateItem @key,
-      status: status,
+      status: status
       last: now()
 
   addResult: (resolution, result) ->
@@ -57,7 +57,7 @@ class WorkerStatusReporter
       @resolutionHistory = @resolutionHistory.slice 1
 
     return @dynamoAdapter.updateItem @key,
-      resolutionHistory: JSON.stringify(@resolutionHistory),
+      resolutionHistory: JSON.stringify(@resolutionHistory)
       last: now()
 
 module.exports = WorkerStatusReporter

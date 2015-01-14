@@ -49,7 +49,7 @@ class FulfillmentWorker
         return Promise.resolve()
 
     pollForWork = =>
-      @workerStatusReporter.updateStatus('Polling')
+      @workerStatusReporter.updateStatus 'Polling'
 
       return @swfAdapter.pollForActivityTaskAsync()
         .then (task) =>
