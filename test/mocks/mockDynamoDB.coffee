@@ -1,8 +1,4 @@
-sinon = require 'sinon'
-
-nodeLikeSuccessSpy = ->
-  return sinon.spy (item, callback) ->
-    callback null, true
+nodeLikeSuccessSpy = require('./utils').nodeLikeSuccessSpy
 
 class mockDynamoDB
   constructor: (@config) ->
