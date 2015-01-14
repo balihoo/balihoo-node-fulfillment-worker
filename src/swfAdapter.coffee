@@ -83,7 +83,7 @@ class SwfAdapter
   failTask: (taskToken, err) ->
     return this.swf.respondActivityTaskFailedAsync
       taskToken: taskToken
-      reason: err.message
+      reason: err.message.substr 0, 256
       details: err.stack
 
 module.exports = SwfAdapter
