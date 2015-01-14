@@ -2,7 +2,7 @@ Balihoo Node.js Fulfillment Worker Library
 ==========================================
 
 ## Version
-0.2.9
+0.2.10
 
 ## Installation
 Make sure you have a recent version of node and npm installed and then run:

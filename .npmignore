@@ -1,7 +1,7 @@
 *.iml
 .idea
-src/
-test/
+src
+test
 gulpfile.coffee
 coverage
 coffeelint.json
