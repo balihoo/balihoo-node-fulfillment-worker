@@ -11,7 +11,7 @@ validateConfig = (config) ->
 
   requiredConfigProperties = ['region', 'domain', 'name', 'version']
 
-  missingProperties = (prop for prop in requiredConfigProperties when typeof config[prop] is 'undefined')
+  missingProperties = (prop for prop in requiredConfigProperties when !config[prop]?)
 
   if missingProperties.length
     throw new error.ConfigurationMissingError(missingProperties)

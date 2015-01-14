@@ -6,12 +6,12 @@ error = require './error'
 class SwfAdapter
   constructor: (@config) ->
     swfConfig =
-      apiVersion: config.apiVersion
-      region: config.region
+      apiVersion: @config.apiVersion
+      region: @config.region
       params:
-        domain: config.domain
-        name: config.name
-        version: config.version
+        domain: @config.domain
+        name: @config.name
+        version: @config.version
 
     if @config.accessKeyId && @config.secretAccessKey
       swfConfig.accessKeyId = @config.accessKeyId
@@ -25,22 +25,19 @@ class SwfAdapter
     @returns {Promise}
   ###
   ensureActivityTypeRegistered: ->
-    swf = @swf
-    config = @config
-
     describeParams =
       activityType:
-        name: config.name
-        version: config.version
+        name: @config.name
+        version: @config.version
 
-    return swf.describeActivityTypeAsync describeParams
-      .catch error.isUnknownResourceError, ->
+    return @swf.describeActivityTypeAsync describeParams
+      .catch error.isUnknownResourceError, =>
         # Activity type doesn't exist, so register it
-        return swf.registerActivityTypeAsync
-          defaultTaskHeartbeatTimeout: config.defaultTaskHeartbeatTimeout || '3900'
-          defaultTaskScheduleToCloseTimeout: config.defaultTaskScheduleToCloseTimeout || '3600'
-          defaultTaskScheduleToStartTimeout: config.defaultTaskScheduleToStartTimeout || '300'
-          defaultTaskStartToCloseTimeout: config.defaultTaskStartToCloseTimeout || '600'
+        return @swf.registerActivityTypeAsync
+          defaultTaskHeartbeatTimeout: @config.defaultTaskHeartbeatTimeout || '3900'
+          defaultTaskScheduleToCloseTimeout: @config.defaultTaskScheduleToCloseTimeout || '3600'
+          defaultTaskScheduleToStartTimeout: @config.defaultTaskScheduleToStartTimeout || '300'
+          defaultTaskStartToCloseTimeout: @config.defaultTaskStartToCloseTimeout || '600'
 
   ###
     Polls for an activity task

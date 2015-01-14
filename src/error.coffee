@@ -4,14 +4,12 @@ class ConfigurationMissingError extends Error
     @message = 'Configuration object is missing the following required properties: ' + @missingProperties.toString() + '.'
 
 class ConfigurationMustBeObjectError extends Error
-  constructor: (type) ->
-    @suppliedType = type
-    @message = 'Config must be of type object, ' + type + ' was supplied.'
+  constructor: (@suppliedType) ->
+    @message = 'Config must be of type object, ' + @suppliedType + ' was supplied.'
 
 class CancelTaskError extends Error
-  constructor: (err) ->
-    @message = err.message
-    @innerErr = err
+  constructor: (@innerErr) ->
+    @message = @innerErr.message
 
 exports.ConfigurationMissingError = ConfigurationMissingError
 exports.ConfigurationMustBeObjectError = ConfigurationMustBeObjectError
