@@ -37,6 +37,8 @@ module.exports = class WorkerStatusDao
       ":#{config.dataWarehousePort}/#{config.dataWarehouseDatabase}"
 
   createFulfillmentActor: (instanceId, name, version, domain, specification) ->
+    now = new Date().toISOString()
+
     using getClient(@connectionString), (client) ->
       client.queryAsync fulfillmentActorInsert, [
         instanceId,
@@ -48,8 +50,8 @@ module.exports = class WorkerStatusDao
         JSON.stringify(specification),
         'Starting',
         'w',
-        new Date().toISOString(),
-        new Date().toISOString()
+        now,
+        now
       ]
 
   updateStatus: (instanceId, status) ->
