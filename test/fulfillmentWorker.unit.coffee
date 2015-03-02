@@ -73,22 +73,6 @@ describe 'FulfillmentWorker unit tests', ->
       assert.ok worker.instanceId
       assert typeof worker.instanceId is 'string'
 
-    it 'Creates an AWS DynamoDB instance', ->
-      sinon.stub aws, 'DynamoDB', mockDynamoDB
-      worker = new FulfillmentWorker(config)
-
-      expectedConfig =
-        accessKeyId: config.accessKeyId
-        secretAccessKey: config.secretAccessKey
-        apiVersion: config.apiVersion
-        region: config.region
-        params:
-          TableName: config.tableName
-
-      assert aws.DynamoDB.calledOnce
-      assert.deepEqual expectedConfig, worker.workerStatusReporter.dynamoAdapter.dynamo.config
-      aws.DynamoDB.restore()
-
     it 'Creates an AWS SWF instance', ->
       sinon.stub aws, 'SWF', mockSWF
       worker = new FulfillmentWorker(config)
