@@ -41,6 +41,10 @@ Configuration is supplied as an object which must contain the following:
 You may optionally specify a schema for input and output:
   * parameterSchema: An object representing a [JSON schema](http://json-schema.org/) that the task must match before being passed to your worker
   * resultSchema: An object representing a [JSON schema](http://json-schema.org/) that will be used to validate the result from your worker
+
+You may also specify your AWS credentials, though we recommend you use the methods described by Amazon [here](http://docs.aws.amazon.com/AWSJavaScriptSDK/guide/node-configuring.html):
+  * accessKeyId: A string containing your AWS access key ID
+  * secretAccessKey: A string containing your AWS secret access key
    
 Additionally, some optional parameters which control the default timeouts for this worker can be specified.  Note that these values will only be used if the task creator does not specify values.
   * defaultTaskHeartbeatTimeout: The default maximum time before the worker must report progress
