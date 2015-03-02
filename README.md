@@ -2,7 +2,7 @@ Balihoo Node.js Fulfillment Worker Library
 ==========================================
 
 ## Version
-0.2.17
+0.2.18
 
 ## Installation
 Make sure you have a recent version of node and npm installed and then run:
@@ -17,7 +17,7 @@ Simply instantiate a worker with configuration and a function to be called when 
     var myWorkFunction = function (input) { 
         return input.x + input.y; 
     }
-      
+
     var worker = new BalihooFulfillmentWorker(config);
     worker.workAsync(myWorkFunction);
     
@@ -29,7 +29,7 @@ Simply instantiate a worker with configuration and a function to be called when 
         worker.stop();
     });
     
-Need to do some work asynchronously?  Simply return a promise (we use bluebird, but any A+ promise will do).
+Need to do some work asynchronously?  Simply return a promise (we use [bluebird](http://github.com/petkaantonov/bluebird/), but any A+ promise will do).
 
 ## Configuration
 Configuration is supplied as an object which must contain the following:
