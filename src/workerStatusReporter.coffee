@@ -20,8 +20,9 @@ class WorkerStatusReporter
       @workerStatusDao = new workerStatusDao config
     
   init: ->
-    if @report
-      @workerStatusDao.createFulfillmentActor @instanceId, @name, @version, @domain, @specification
+    Promise.try =>
+      if @report
+        @workerStatusDao.createFulfillmentActor @instanceId, @name, @version, @domain, @specification
       
   updateStatus: (status) ->
     Promise.try =>
