@@ -1,7 +1,6 @@
 'use strict'
 os = require 'os'
 Promise = require 'bluebird'
-dynamoAdapter = require './dynamoAdapter'
 workerStatusDao = require './workerStatusDao'
 
 class WorkerStatusReporter
