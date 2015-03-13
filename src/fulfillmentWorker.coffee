@@ -33,9 +33,6 @@ class FulfillmentWorker
 
     handleTask = (task) =>
       if (@taskToken)
-        shortToken = @taskToken.substr(@taskToken.length - 10)
-        @workerStatusReporter.updateStatus 'Processing task..' + shortToken
-
         # Parse the input into an object and do the work
         return parseInput task.input
           .then (input) ->
@@ -49,7 +46,7 @@ class FulfillmentWorker
         return Promise.resolve()
 
     pollForWork = =>
-      @workerStatusReporter.updateStatus 'Polling'
+      @workerStatusReporter.updateStatus 'active'
 
       return @swfAdapter.pollForActivityTaskAsync()
         .then (task) =>
@@ -82,6 +79,6 @@ class FulfillmentWorker
 
   stop: ->
     @keepPolling = false
-    return @workerStatusReporter.updateStatus 'Terminated'
+    return @workerStatusReporter.updateStatus 'stopped'
 
 module.exports = FulfillmentWorker

@@ -48,7 +48,7 @@ module.exports = class WorkerStatusDao
         os.hostname(),
         JSON.stringify([]),
         JSON.stringify(specification),
-        'Starting',
+        'starting',
         'w',
         now,
         now

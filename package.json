@@ -1,6 +1,6 @@
 {
   "name": "balihoo-fulfillment-worker",
-  "version": "0.2.19",
+  "version": "0.2.20",
   "description": "Balihoo fulfillment connectivity library",
   "author": "Balihoo",
   "engines": {
