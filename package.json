@@ -1,6 +1,6 @@
 {
   "name": "balihoo-fulfillment-worker",
-  "version": "0.2.20",
+  "version": "0.2.21",
   "description": "Balihoo fulfillment connectivity library",
   "author": "Balihoo",
   "engines": {
@@ -11,7 +11,7 @@
     "aws-sdk": "2.1.4",
     "bluebird": "2.4.2",
     "node-uuid": "1.4.2",
-    "pg": "^4.3.0"
+    "dynamodb-data-types": "0.2.7"
   },
   "devDependencies": {
     "coffee-script": "^1.8.0",

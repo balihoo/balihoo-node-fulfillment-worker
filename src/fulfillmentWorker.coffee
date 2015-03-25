@@ -33,14 +33,17 @@ class FulfillmentWorker
 
     handleTask = (task) =>
       if (@taskToken)
+        shortToken = @taskToken.substr(@taskToken.length - 10)
+        @workerStatusReporter.updateStatus 'Processing task..' + shortToken
+
         # Parse the input into an object and do the work
         return parseInput task.input
-          .then (input) ->
-            ###
-            Wrap the worker call in Promise.resolve.  This allows workerFunc to return a simple value,
-            a bluebird promise, or a promise from another A+ promise library.
-            ###
-            return Promise.resolve workerFunc(input)
+        .then (input) ->
+          ###
+          Wrap the worker call in Promise.resolve.  This allows workerFunc to return a simple value,
+          a bluebird promise, or a promise from another A+ promise library.
+          ###
+          return Promise.resolve workerFunc(input)
       else
         # No work to be done
         return Promise.resolve()
@@ -49,33 +52,33 @@ class FulfillmentWorker
       @workerStatusReporter.updateStatus 'active'
 
       return @swfAdapter.pollForActivityTaskAsync()
-        .then (task) =>
-          @taskToken = task.taskToken
-          return handleTask task
-        .then (workResult) =>
-          if (workResult)
-            return @swfAdapter.respondWithWorkResult @taskToken, workResult
-              .then =>
-                @workerStatusReporter.addResult 'Completed', workResult
-        .catch error.CancelTaskError, (err) =>
-          # A CancelTaskError results in a cancelled task
-          return @swfAdapter.cancelTask @taskToken, err
-            .then =>
-              @workerStatusReporter.addResult 'Canceled', err.message
-        .catch (err) =>
-          if @taskToken
-            # All other errors result in a failed task
-            return @swfAdapter.failTask @taskToken, err
-              .then =>
-                @workerStatusReporter.addResult 'Failed', err.message
-        .finally =>
-          if @keepPolling
-            return pollForWork()
+      .then (task) =>
+        @taskToken = task.taskToken
+        return handleTask task
+      .then (workResult) =>
+        if (workResult)
+          return @swfAdapter.respondWithWorkResult @taskToken, workResult
+          .then =>
+            @workerStatusReporter.addResult 'Completed', workResult
+      .catch error.CancelTaskError, (err) =>
+        # A CancelTaskError results in a cancelled task
+        return @swfAdapter.cancelTask @taskToken, err
+        .then =>
+          @workerStatusReporter.addResult 'Canceled', err.message
+      .catch (err) =>
+        if @taskToken
+          # All other errors result in a failed task
+          return @swfAdapter.failTask @taskToken, err
+          .then =>
+            @workerStatusReporter.addResult 'Failed', err.message
+      .finally =>
+        if @keepPolling
+          return pollForWork()
 
     return @swfAdapter.ensureActivityTypeRegistered()
-      .then =>
-        return @workerStatusReporter.init()
-      .then pollForWork
+    .then =>
+      return @workerStatusReporter.init()
+    .then pollForWork
 
   stop: ->
     @keepPolling = false
