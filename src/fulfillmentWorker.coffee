@@ -33,9 +33,6 @@ class FulfillmentWorker
 
     handleTask = (task) =>
       if (@taskToken)
-        shortToken = @taskToken.substr(@taskToken.length - 10)
-        @workerStatusReporter.updateStatus 'Processing task..' + shortToken
-
         # Parse the input into an object and do the work
         return parseInput task.input
         .then (input) ->
