@@ -19,7 +19,7 @@ exports.deliver = (workResult) ->
       encoded = new Buffer compressed
       .toString 'base64'
 
-      return "#{ZIP_PREFIX}:#{byteCount}:#{encoded}"
+      return "#{ZIP_PREFIX}#{SEPARATOR}#{byteCount}#{SEPARATOR}#{encoded}"
 
 exports.receive = (input) ->
   Promise.try ->
