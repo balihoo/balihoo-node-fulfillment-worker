@@ -4,6 +4,7 @@ Promise = require 'bluebird'
 error = require './error'
 SwfAdapter = require './swfAdapter'
 WorkerStatusReporter = require './workerStatusReporter'
+dataZipper = require './dataZipper'
 
 validateConfig = (config) ->
   if typeof config isnt 'object'
@@ -19,7 +20,7 @@ validateConfig = (config) ->
 class FulfillmentWorker
   constructor: (config) ->
     validateConfig config
-
+    
     @instanceId = uuid.v4()
     config.apiVersion = '2015-01-07'
 
@@ -28,19 +29,21 @@ class FulfillmentWorker
     @keepPolling = true
 
   workAsync: (workerFunc) ->
-    parseInput = Promise.method (input) ->
-      return JSON.parse(input)
-
     handleTask = (task) =>
-      if (@taskToken)
-        # Parse the input into an object and do the work
-        return parseInput task.input
-        .then (input) ->
+      @taskToken = task?.taskToken
+      
+      if @taskToken
+        # Decompress the input if needed
+        dataZipper.receive task.input
+        .then (decompressedInput) ->
+          # Parse the input into an object and do the work
+          input = JSON.parse decompressedInput
+
           ###
           Wrap the worker call in Promise.resolve.  This allows workerFunc to return a simple value,
           a bluebird promise, or a promise from another A+ promise library.
           ###
-          return Promise.resolve workerFunc(input)
+          return Promise.resolve workerFunc input
       else
         # No work to be done
         return Promise.resolve()
@@ -49,9 +52,8 @@ class FulfillmentWorker
       @workerStatusReporter.updateStatus 'active'
 
       return @swfAdapter.pollForActivityTaskAsync()
-      .then (task) =>
-        @taskToken = task.taskToken
-        return handleTask task
+      .then handleTask
+      .then dataZipper.deliver
       .then (workResult) =>
         if (workResult)
           return @swfAdapter.respondWithWorkResult @taskToken, workResult
