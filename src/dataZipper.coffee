@@ -1,38 +1,104 @@
+crypto = require 'crypto'
 zlib = require 'zlib'
 Promise = require 'bluebird'
+startsWith = require('./utils').startsWith
 Promise.promisifyAll zlib
 
-exports.INLINE_ZIP_THRESHOLD = INLINE_ZIP_THRESHOLD = 32768
+request = require 'request'
+request = request.defaults
+  timeout: 20000
+  pool: false # Use the default node request agent
+Promise.promisifyAll request
+
+exports.MAX_RESULT_SIZE = MAX_RESULT_SIZE = 32768
 exports.ZIP_PREFIX = ZIP_PREFIX = 'FF-ZIP'
+exports.URL_PREFIX = URL_PREFIX = 'FF-URL'
 exports.SEPARATOR = SEPARATOR = ':'
 
-exports.deliver = (workResult) ->
-  Promise.try ->
-    stringResult = JSON.stringify workResult
-    byteCount = Buffer.byteLength stringResult, 'utf8'
+getHash = (data) ->
+  md5sum = crypto.createHash 'md5'
+  md5sum.update data
+  md5sum.digest 'hex'
 
-    if byteCount < INLINE_ZIP_THRESHOLD
-      return workResult
+byteLength = (str) ->
+  Buffer.byteLength str, 'utf8'
+
+zip = (data) ->
+  zlib.deflateAsync data
+  .then (compressed) ->
+    encoded = new Buffer compressed
+    .toString 'base64'
+
+    "#{ZIP_PREFIX}#{SEPARATOR}#{byteLength data}#{SEPARATOR}#{encoded}"
+
+unzip = (data) ->
+  parts = data.split SEPARATOR
+  throw new Error "Malformed zip data"  if parts.length isnt 3
+
+  encoded = parts[2]
+  compressed = new Buffer encoded, 'base64'
+
+  zlib.inflateAsync compressed
+  .then (decompressed) ->
+    return decompressed.toString 'utf-8'
+
+storeInS3 = (data, s3Adapter) ->
+  hash = getHash data
+
+  s3Adapter.upload "DataZipper/#{hash}.ff", data
+  .then (uri) ->
+    "#{URL_PREFIX}#{SEPARATOR}#{hash}#{SEPARATOR}#{uri}"
+    
+getFromUrl = (input, s3Adapter) ->
+  parts = input.split SEPARATOR
+  throw new Error "Malformed URL #{input}"  if parts.length isnt 4
+  
+  hash = parts[1]
+  protocol = parts[2]
+  path = parts[3]
+
+  if protocol is 's3'
+    s3Adapter.download "DataZipper/#{hash}.ff"
+    .then (s3Result) =>
+      s3Result.Body?.toString 'utf-8'
       
-    zlib.deflateAsync stringResult
-    .then (compressed) ->
-      encoded = new Buffer compressed
-      .toString 'base64'
+  else if protocol is 'http' or protocol is 'https'
+    request.getAsync "#{protocol}:#{path}"
+    .spread (_, body) ->
+      body
+  else
+    throw new Error "Unknown protocol #{protocol}"
+  
+exports.DataZipper = class DataZipper
+  constructor: (@s3Adapter) ->
 
-      return "#{ZIP_PREFIX}#{SEPARATOR}#{byteCount}#{SEPARATOR}#{encoded}"
+  deliver: (workResult) ->
+    Promise.try =>
+      stringResult = JSON.stringify workResult
 
-exports.receive = (input) ->
-  Promise.try ->
-    if typeof input isnt 'string' or input.slice(0, ZIP_PREFIX.length) isnt ZIP_PREFIX
-      return input
-    
-    parts = input.split SEPARATOR
-    throw new Error "Malformed zip data"  if parts.length isnt 3
-    
-    encoded = parts[2]
-    compressed = new Buffer encoded, 'base64'
+      if byteLength(stringResult) < MAX_RESULT_SIZE
+        return workResult
 
-    zlib.inflateAsync compressed
-    .then (decompressed) ->
-      return decompressed.toString 'utf-8'
-    
+      # Result is too big, compress and base64 encode it
+      zip stringResult
+      .then (zipResult) =>
+        if byteLength(zipResult) < MAX_RESULT_SIZE
+          return zipResult
+
+        # Zipped result is still too big, so put it in S3
+        storeInS3 zipResult, @s3Adapter
+
+  receive: (input) ->
+    Promise.try =>
+      if typeof input is 'string'
+        if startsWith input, ZIP_PREFIX
+          unzip input
+        else if startsWith input, URL_PREFIX
+          getFromUrl input, @s3Adapter
+          .then @receive
+        else
+          # It isn't an ZIP or URL, so just return the string
+          return input
+      else
+        # It isn't a string, so return it
+        return input

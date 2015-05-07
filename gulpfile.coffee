@@ -38,5 +38,5 @@ gulp.task 'cover', ['compile'], ->
 
 gulp.task 'build', ['clean', 'lint', 'cover']
 
-gulp.task 'watch', ->
+gulp.task 'watch', ['compile'], ->
   return gulp.watch sources.coffee, ['compile']

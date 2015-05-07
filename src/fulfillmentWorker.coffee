@@ -3,6 +3,7 @@ uuid = require 'node-uuid'
 Promise = require 'bluebird'
 error = require './error'
 SwfAdapter = require './swfAdapter'
+S3Adapter = require './s3Adapter'
 WorkerStatusReporter = require './workerStatusReporter'
 dataZipper = require './dataZipper'
 
@@ -24,8 +25,10 @@ class FulfillmentWorker
     @instanceId = uuid.v4()
     config.apiVersion = '2015-01-07'
 
-    @swfAdapter = new SwfAdapter(config)
-    @workerStatusReporter = new WorkerStatusReporter(@instanceId, config)
+    @swfAdapter = new SwfAdapter config
+    s3Adapter = new S3Adapter config
+    @dataZipper = new dataZipper.DataZipper s3Adapter
+    @workerStatusReporter = new WorkerStatusReporter @instanceId, config
     @keepPolling = true
 
   workAsync: (workerFunc) ->
@@ -34,7 +37,7 @@ class FulfillmentWorker
       
       if @taskToken
         # Decompress the input if needed
-        dataZipper.receive task.input
+        @dataZipper.receive task.input
         .then (decompressedInput) ->
           # Parse the input into an object and do the work
           input = JSON.parse decompressedInput
@@ -53,7 +56,7 @@ class FulfillmentWorker
 
       return @swfAdapter.pollForActivityTaskAsync()
       .then handleTask
-      .then dataZipper.deliver
+      .then @dataZipper.deliver
       .then (workResult) =>
         if (workResult)
           return @swfAdapter.respondWithWorkResult @taskToken, workResult
