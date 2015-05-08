@@ -72,7 +72,7 @@ getFromUrl = (input, s3Adapter) ->
 exports.DataZipper = class DataZipper
   constructor: (@s3Adapter) ->
 
-  deliver: (workResult) ->
+  deliver: (workResult) =>
     Promise.try =>
       stringResult = JSON.stringify workResult
 
@@ -88,7 +88,7 @@ exports.DataZipper = class DataZipper
         # Zipped result is still too big, so put it in S3
         storeInS3 zipResult, @s3Adapter
 
-  receive: (input) ->
+  receive: (input) =>
     Promise.try =>
       if typeof input is 'string'
         if startsWith input, ZIP_PREFIX
