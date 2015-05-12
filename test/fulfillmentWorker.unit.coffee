@@ -4,6 +4,7 @@ aws = require 'aws-sdk'
 sinon = require 'sinon'
 Promise = require 'bluebird'
 FulfillmentWorker = require '../lib/fulfillmentWorker'
+activityStatus = require '../lib/activityStatus'
 error = require '../lib/error'
 mockDynamoDB = require './mocks/mockDynamoDB'
 mockSWF = require './mocks/mockSWF'
@@ -184,6 +185,7 @@ describe 'FulfillmentWorker unit tests', ->
         expectedInput = null
         expectedToken = null
         expectedResult = null
+        expectedSwfResult = null
         err = null
         
         beforeEach ->
@@ -198,12 +200,18 @@ describe 'FulfillmentWorker unit tests', ->
             something: 'weeeee!'
             somethingElse: 5
 
+          expectedSwfResult =
+            status: activityStatus.success
+            result: expectedResult
+
           fakeTask =
             taskToken: expectedToken
             input: JSON.stringify expectedInput
 
+          errorDetails = 'Some extra error details'
           err = new Error('Loud noises!')
-
+          err.details = errorDetails
+          
           worker.swfAdapter.swf.pollForActivityTask = (params, callback) ->
             callback null, fakeTask
             
@@ -219,19 +227,19 @@ describe 'FulfillmentWorker unit tests', ->
             it 'returns the result to simple workflow', (done) ->
               worker.swfAdapter.swf.respondActivityTaskCompleted = (params) ->
                 assert.strictEqual expectedToken, params.taskToken
-                assert.strictEqual JSON.stringify(expectedResult), params.result
+                assert.strictEqual params.result, JSON.stringify expectedSwfResult
                 worker.stop()
                 .then ->
                   done()
-                  
+
               worker.workAsync ->
                 return expectedResult
 
           context 'when the worker function returns a promise that resolves', ->
             it 'returns the result to simple workflow', (done) ->
               worker.swfAdapter.swf.respondActivityTaskCompleted = (params) ->
-                assert.strictEqual expectedToken, params.taskToken
-                assert.strictEqual JSON.stringify(expectedResult), params.result
+                assert.strictEqual params.taskToken, expectedToken
+                assert.strictEqual params.result, JSON.stringify expectedSwfResult
                 worker.stop()
                 .then ->
                   done()
@@ -241,25 +249,56 @@ describe 'FulfillmentWorker unit tests', ->
 
           context 'when the worker function returns a promise that rejects', ->
             it 'fails the task', (done) ->
+              expectedSwfResult =
+                taskToken: expectedToken
+                reason: ''
+                details: JSON.stringify
+                  status: activityStatus.error
+                  notes: [err.message, err.details, err.stack]
+            
               worker.swfAdapter.swf.respondActivityTaskFailed = (params) ->
-                assert.strictEqual expectedToken, params.taskToken
-                assert.strictEqual err.message, params.reason
-                assert.ok params.details
-                
+                assert.deepEqual params, expectedSwfResult
+
                 worker.stop()
                 .then ->
                   done()
 
               worker.workAsync ->
                 return Promise.reject err
+
+          context 'when the worker function returns a promise that rejects with a FailTaskError', ->
+            it 'fails the task', (done) ->
+              failTaskError = new error.FailTaskError err.message, err.details, err.stack
+
+              expectedSwfResult =
+                taskToken: expectedToken
+                reason: ''
+                details: JSON.stringify
+                  status: activityStatus.fatal
+                  notes: [err.message, err.details, err.stack]
+
+              worker.swfAdapter.swf.respondActivityTaskFailed = (params) ->
+                assert.deepEqual params, expectedSwfResult
+
+                worker.stop()
+                .then ->
+                  done()
+
+              worker.workAsync ->
+                return Promise.reject failTaskError
                 
           context 'when the worker returns a promise which rejects with a CancelTaskError', ->
             it 'cancels the task', (done) ->
-              cancelTaskError = new error.CancelTaskError(err)
+              cancelTaskError = new error.CancelTaskError err.message, err.details
+
+              expectedSwfResult =
+                taskToken: expectedToken
+                details: JSON.stringify
+                  status: activityStatus.defer
+                  notes: [err.message, err.details]
 
               worker.swfAdapter.swf.respondActivityTaskCanceled = (params) ->
-                assert.strictEqual expectedToken, params.taskToken
-                assert.strictEqual err.message, params.details
+                assert.deepEqual params, expectedSwfResult
 
                 worker.stop()
                 .then ->
@@ -270,10 +309,15 @@ describe 'FulfillmentWorker unit tests', ->
                 
           context 'when the worker function throws an error', ->
             it 'fails the task', (done) ->
+              expectedSwfResult =
+                taskToken: expectedToken
+                reason: ''
+                details: JSON.stringify
+                  status: activityStatus.error
+                  notes: [err.message, err.details, err.stack]
+                
               worker.swfAdapter.swf.respondActivityTaskFailed = (params) ->
-                assert.strictEqual expectedToken, params.taskToken
-                assert.strictEqual err.message, params.reason
-                assert.ok params.details
+                assert.deepEqual params, expectedSwfResult
 
                 worker.stop()
                 .then ->
@@ -282,13 +326,39 @@ describe 'FulfillmentWorker unit tests', ->
               worker.workAsync ->
                 throw err
 
+          context 'when the worker function throws a FailTaskError', ->
+            it 'fails the task', (done) ->
+              failTaskError = new error.FailTaskError err.message, err.details, err.stack
+
+              expectedSwfResult =
+                taskToken: expectedToken
+                reason: ''
+                details: JSON.stringify
+                  status: activityStatus.fatal
+                  notes: [err.message, err.details, err.stack]
+
+              worker.swfAdapter.swf.respondActivityTaskFailed = (params) ->
+                assert.deepEqual params, expectedSwfResult
+
+                worker.stop()
+                .then ->
+                  done()
+
+              worker.workAsync ->
+                throw failTaskError
+                
           context 'when the worker function throws a CancelTaskError', ->
-            it 'cancels the task', (done) ->              
-              cancelTaskError = new error.CancelTaskError(err)
+            it 'cancels the task', (done) ->
+              cancelTaskError = new error.CancelTaskError err.message, err.details
+
+              expectedSwfResult =
+                taskToken: expectedToken
+                details: JSON.stringify
+                  status: activityStatus.defer
+                  notes: [err.message, err.details]
 
               worker.swfAdapter.swf.respondActivityTaskCanceled = (params) ->
-                assert.strictEqual expectedToken, params.taskToken
-                assert.strictEqual err.message, params.details
+                assert.deepEqual params, expectedSwfResult
 
                 worker.stop()
                 .then ->

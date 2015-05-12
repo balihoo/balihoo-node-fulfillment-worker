@@ -2,6 +2,7 @@
 aws = require 'aws-sdk'
 Promise = require 'bluebird'
 error = require './error'
+activityStatus = require './activityStatus'
 
 class SwfAdapter
   constructor: (@config) ->
@@ -30,10 +31,10 @@ class SwfAdapter
         name: @config.name
         version: @config.version
 
-    return @swf.describeActivityTypeAsync describeParams
+    @swf.describeActivityTypeAsync describeParams
       .catch error.isUnknownResourceError, =>
         # Activity type doesn't exist, so register it
-        return @swf.registerActivityTypeAsync
+        @swf.registerActivityTypeAsync
           defaultTaskHeartbeatTimeout: @config.defaultTaskHeartbeatTimeout || '3900'
           defaultTaskScheduleToCloseTimeout: @config.defaultTaskScheduleToCloseTimeout || '3600'
           defaultTaskScheduleToStartTimeout: @config.defaultTaskScheduleToStartTimeout || '300'
@@ -45,7 +46,7 @@ class SwfAdapter
     @returns {Promise}
   ###
   pollForActivityTaskAsync: ->
-    return @swf.pollForActivityTaskAsync
+    @swf.pollForActivityTaskAsync
       taskList:
         name: this.config.name + this.config.version
 
@@ -57,7 +58,11 @@ class SwfAdapter
     @returns {Promise}
   ###
   respondWithWorkResult: (taskToken, result) ->
-    return this.swf.respondActivityTaskCompletedAsync
+    result =
+      status: activityStatus.success
+      result: result
+
+    @swf.respondActivityTaskCompletedAsync
       taskToken: taskToken
       result: JSON.stringify result
 
@@ -65,25 +70,25 @@ class SwfAdapter
     Cancels the task
 
     @param {String} taskToken
-    @param {Error} err
+    @param {String} details
     @returns {Promise}
   ###
-  cancelTask: (taskToken, err) ->
-    return this.swf.respondActivityTaskCanceledAsync
+  cancelTask: (taskToken, details) ->
+    @swf.respondActivityTaskCanceledAsync
+      details: JSON.stringify details
       taskToken: taskToken
-      details: err.message
 
   ###
     Fails the task
 
     @param {String} taskToken
-    @param {Error} err
+    @param {String} details
     @returns {Promise}
   ###
-  failTask: (taskToken, err) ->
-    return this.swf.respondActivityTaskFailedAsync
+  failTask: (taskToken, details) ->
+    @swf.respondActivityTaskFailedAsync
+      details: JSON.stringify details
+      reason: "" # Currently necessary because the fulfillment dashboard requires reason to be non-null
       taskToken: taskToken
-      reason: err.message.substr 0, 256
-      details: err.stack
-
+      
 module.exports = SwfAdapter

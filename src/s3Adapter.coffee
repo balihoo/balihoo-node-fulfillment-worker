@@ -7,7 +7,7 @@ class S3Adapter
   constructor: (config) ->
     @bucket = config.bucket
     
-    s3Config =      
+    s3Config =
       apiVersion: config.apiVersion
       region: config.region
       params:

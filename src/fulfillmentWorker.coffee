@@ -6,6 +6,7 @@ SwfAdapter = require './swfAdapter'
 S3Adapter = require './s3Adapter'
 WorkerStatusReporter = require './workerStatusReporter'
 dataZipper = require './dataZipper'
+activityStatus = require './activityStatus'
 
 validateConfig = (config) ->
   if typeof config isnt 'object'
@@ -32,6 +33,23 @@ class FulfillmentWorker
     @keepPolling = true
 
   workAsync: (workerFunc) ->
+    handleError = (err) =>
+      status = activityStatus.error
+
+      if err instanceof error.CancelTaskError
+        status = activityStatus.defer
+      else if err instanceof error.FailTaskError
+        status = activityStatus.fatal
+
+      @dataZipper.deliver
+        status: status
+        notes: error.buildNotes err
+      .then (details) =>
+        if err instanceof error.CancelTaskError
+          @swfAdapter.cancelTask @taskToken, details
+        else
+          @swfAdapter.failTask @taskToken, details
+
     handleTask = (task) =>
       @taskToken = task?.taskToken
       
@@ -50,7 +68,7 @@ class FulfillmentWorker
       else
         # No work to be done
         return Promise.resolve()
-
+  
     pollForWork = =>
       @workerStatusReporter.updateStatus 'active'
 
@@ -62,17 +80,7 @@ class FulfillmentWorker
           return @swfAdapter.respondWithWorkResult @taskToken, workResult
           .then =>
             @workerStatusReporter.addResult 'Completed', workResult
-      .catch error.CancelTaskError, (err) =>
-        # A CancelTaskError results in a cancelled task
-        return @swfAdapter.cancelTask @taskToken, err
-        .then =>
-          @workerStatusReporter.addResult 'Canceled', err.message
-      .catch (err) =>
-        if @taskToken
-          # All other errors result in a failed task
-          return @swfAdapter.failTask @taskToken, err
-          .then =>
-            @workerStatusReporter.addResult 'Failed', err.message
+      .catch handleError
       .finally =>
         if @keepPolling
           return pollForWork()

@@ -1,19 +1,23 @@
 'use strict'
-class ConfigurationMissingError extends Error
+exports.ConfigurationMissingError = class ConfigurationMissingError extends Error
   constructor: (@missingProperties) ->
     @message = 'Configuration object is missing the following required properties: ' + @missingProperties.toString() + '.'
 
-class ConfigurationMustBeObjectError extends Error
+exports.ConfigurationMustBeObjectError = class ConfigurationMustBeObjectError extends Error
   constructor: (@suppliedType) ->
     @message = 'Config must be of type object, ' + @suppliedType + ' was supplied.'
 
-class CancelTaskError extends Error
-  constructor: (@innerErr) ->
-    @message = @innerErr.message
+exports.FailTaskError = class FailTaskError extends Error
+  constructor: (@message, @details, @stack) ->
 
-exports.ConfigurationMissingError = ConfigurationMissingError
-exports.ConfigurationMustBeObjectError = ConfigurationMustBeObjectError
-exports.CancelTaskError = CancelTaskError
+exports.CancelTaskError = class CancelTaskError extends Error
+  constructor: (@message, @details) ->
 
 exports.isUnknownResourceError = (err) ->
   err and err.cause and err.cause.code is 'UnknownResourceFault'
+
+exports.buildNotes = (err) ->
+  notes = [err.message]
+  notes.push err.details  if err.details
+  notes.push err.stack  if err.stack
+  notes

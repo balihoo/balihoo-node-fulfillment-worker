@@ -59,7 +59,7 @@ getFromUrl = (input, s3Adapter) ->
 
   if protocol is 's3'
     s3Adapter.download "DataZipper/#{hash}.ff"
-    .then (s3Result) =>
+    .then (s3Result) ->
       s3Result.Body?.toString 'utf-8'
       
   else if protocol is 'http' or protocol is 'https'
