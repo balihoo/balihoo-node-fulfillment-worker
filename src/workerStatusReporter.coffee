@@ -18,7 +18,7 @@ class WorkerStatusReporter
     @name = config.name
     @version = config.version
     @specification =
-      parameters: config.parameterSchema or {}
+      params: config.parameterSchema or {}
       result: config.resultSchema or {}
 
     @resolutionHistory = []
