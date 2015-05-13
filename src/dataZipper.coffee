@@ -77,7 +77,7 @@ exports.DataZipper = class DataZipper
       stringResult = JSON.stringify workResult
 
       if byteLength(stringResult) < MAX_RESULT_SIZE
-        return workResult
+        return stringResult
 
       # Result is too big, compress and base64 encode it
       zip stringResult

@@ -60,7 +60,7 @@ class SwfAdapter
   respondWithWorkResult: (taskToken, result) ->
     @swf.respondActivityTaskCompletedAsync
       taskToken: taskToken
-      result: JSON.stringify result
+      result: result
 
   ###
     Cancels the task
