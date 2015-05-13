@@ -71,7 +71,7 @@ class SwfAdapter
   ###
   cancelTask: (taskToken, details) ->
     @swf.respondActivityTaskCanceledAsync
-      details: JSON.stringify details
+      details: details
       taskToken: taskToken
 
   ###
@@ -83,7 +83,7 @@ class SwfAdapter
   ###
   failTask: (taskToken, details) ->
     @swf.respondActivityTaskFailedAsync
-      details: JSON.stringify details
+      details: details
       reason: "" # Currently necessary because the fulfillment dashboard requires reason to be non-null
       taskToken: taskToken
       

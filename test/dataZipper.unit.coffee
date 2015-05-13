@@ -15,12 +15,12 @@ smallResult = {
 describe 'dataZipper unit tests', ->
   describe 'deliver() / receive()', ->
     context "when the supplied data is less than #{dataZipper.MAX_RESULT_SIZE} bytes", ->
-      it 'returns the supplied data', ->
+      it 'returns a JSON stringified copy of the supplied data', ->
         zipper = new dataZipper.DataZipper null
 
         zipper.deliver smallResult
         .then (result) ->
-          assert.strictEqual result, smallResult
+          assert.deepEqual result, JSON.stringify smallResult
 
     context "when the supplied data is greater than #{dataZipper.MAX_RESULT_SIZE} bytes", ->
       context "and the compressed data is less than #{dataZipper.MAX_RESULT_SIZE} bytes", ->
