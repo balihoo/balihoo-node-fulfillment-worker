@@ -64,7 +64,10 @@ class FulfillmentWorker
           Wrap the worker call in Promise.resolve.  This allows workerFunc to return a simple value,
           a bluebird promise, or a promise from another A+ promise library.
           ###
-          return Promise.resolve workerFunc input
+          Promise.resolve workerFunc input
+        .then (workResult) ->
+          status: activityStatus.success
+          result: workResult
       else
         # No work to be done
         return Promise.resolve()

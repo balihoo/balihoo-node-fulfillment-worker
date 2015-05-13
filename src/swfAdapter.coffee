@@ -58,10 +58,6 @@ class SwfAdapter
     @returns {Promise}
   ###
   respondWithWorkResult: (taskToken, result) ->
-    result =
-      status: activityStatus.success
-      result: result
-
     @swf.respondActivityTaskCompletedAsync
       taskToken: taskToken
       result: JSON.stringify result
