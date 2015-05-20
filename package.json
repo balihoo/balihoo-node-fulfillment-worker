@@ -3,6 +3,10 @@
   "version": "0.2.30",
   "description": "Balihoo fulfillment connectivity library",
   "author": "Balihoo",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com:balihoo/balihoo-node-fulfillment-worker.git"
+  },
   "engines": {
     "node": ">= 0.10.26"
   },
