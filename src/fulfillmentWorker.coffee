@@ -98,3 +98,6 @@ class FulfillmentWorker
     return @workerStatusReporter.updateStatus 'stopped'
 
 module.exports = FulfillmentWorker
+
+module.exports.S3Adapter = S3Adapter
+module.exports.dataZipper = dataZipper
