@@ -70,7 +70,3 @@ module.exports = class WorkerStatusDao
         resolutionHistory,
         new Date().toISOString()
       ]
-      .then (result) ->
-        console.log "Update result is #{JSON.stringify result}"
-      .catch (err) ->
-        console.log err
