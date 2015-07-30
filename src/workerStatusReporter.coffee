@@ -1,19 +1,13 @@
 'use strict'
 os = require 'os'
 Promise = require 'bluebird'
-dynamoAdapter = require './dynamoAdapter'
-
-WORKER_STATUS_TABLE = 'fulfillment_worker_status'
+WorkerStatusDao = require './workerStatusDao'
 
 now = ->
   return new Date().toISOString()
 
 class WorkerStatusReporter
   constructor: (@instanceId, config) ->
-    config.tableName = WORKER_STATUS_TABLE
-
-    @key = { instance: @instanceId }
-    @hostAddress = os.hostname()
     @domain = config.domain
     @name = config.name
     @version = config.version
@@ -22,28 +16,21 @@ class WorkerStatusReporter
       result: config.resultSchema or {}
 
     @resolutionHistory = []
-
-    @dynamoAdapter = new dynamoAdapter(config)
-
+    @report = (config.workerStatusDb?.username and config.workerStatusDb?.password and
+      config.workerStatusDb?.host and config.workerStatusDb?.name)
+    
+    if @report
+      @workerStatusDao = new WorkerStatusDao config.workerStatusDb
+    
   init: ->
     Promise.try =>
-      @dynamoAdapter.putItem
-        instance: @instanceId
-        hostAddress: os.hostname()
-        domain: @domain
-        activityName: @name
-        activityVersion: @version
-        specification: JSON.stringify(@specification)
-        status: 'starting'
-        resolutionHistory: JSON.stringify(@resolutionHistory)
-        start: now()
-        last: now()
-
+      if @report
+        @workerStatusDao.createFulfillmentActor @instanceId, @name, @version, @domain, @specification
+      
   updateStatus: (status) ->
     Promise.try =>
-      @dynamoAdapter.updateItem @key,
-        status: status
-        last: now()
+      if @report
+        @workerStatusDao.updateStatus @instanceId, status
 
   addResult: (resolution, result) ->
     Promise.try =>
@@ -59,8 +46,7 @@ class WorkerStatusReporter
       if @resolutionHistory.length > 20
         @resolutionHistory = @resolutionHistory.slice 1
 
-      @dynamoAdapter.updateItem @key,
-        resolutionHistory: JSON.stringify(@resolutionHistory)
-        last: now()
+      if @report
+        @workerStatusDao.updateHistory @instanceId, @resolutionHistory
 
 module.exports = WorkerStatusReporter
