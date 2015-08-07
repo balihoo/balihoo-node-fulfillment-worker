@@ -1,6 +1,7 @@
 Promise = require 'bluebird'
 pg = require 'pg'
 os = require 'os'
+debounce = require 'debounce'
 using = Promise.using
 Promise.promisifyAll pg
 
@@ -9,9 +10,7 @@ fulfillmentActorInsert = 'INSERT INTO actor
   started_on, last_update)
   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)'
 
-updateStatus = 'UPDATE actor SET status=$2, last_update=$3 WHERE instance_id=$1'
-
-updateHistory = 'UPDATE actor SET history=$2, last_update=$3 WHERE instance_id=$1'
+updateStatus = 'UPDATE actor SET status=$2, history=$3, last_update=$4 WHERE instance_id=$1'
 
 ###
   Get a self-disposing PgSQL client
@@ -34,6 +33,18 @@ module.exports = class WorkerStatusDao
   constructor: (@dbConfig) ->
     @connectionString =
       "postgres://#{dbConfig.username}:#{dbConfig.password}@#{dbConfig.host}:#{dbConfig.port or 5432}/#{dbConfig.name}"
+    
+    @updateStatus = debounce(
+      (instanceId, status, resolutionHistory) =>
+        using getClient(@connectionString), (client) ->
+          client.queryAsync updateStatus, [
+            instanceId,
+            status,
+            resolutionHistory
+            new Date().toISOString()
+          ]
+      , 10000, true
+    )
 
   createFulfillmentActor: (instanceId, name, version, domain, specification) ->
     now = new Date().toISOString()
@@ -47,26 +58,8 @@ module.exports = class WorkerStatusDao
         os.hostname(),
         JSON.stringify([]),
         JSON.stringify(specification),
-        'starting',
+        'Starting..',
         'w',
         now,
         now
-      ]
-
-  updateStatus: (instanceId, status) ->
-    using getClient(@connectionString), (client) ->
-      client.queryAsync updateStatus, [
-        instanceId,
-        status,
-        new Date().toISOString()
-      ]
-
-  updateHistory: (instanceId, resolutionHistory) ->
-    resolutionHistory = JSON.stringify resolutionHistory
-    
-    using getClient(@connectionString), (client) ->
-      client.queryAsync updateHistory, [
-        instanceId,
-        resolutionHistory,
-        new Date().toISOString()
       ]

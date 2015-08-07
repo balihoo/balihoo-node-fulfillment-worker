@@ -31,6 +31,9 @@ class FulfillmentWorker
     @dataZipper = new dataZipper.DataZipper s3Adapter
     @workerStatusReporter = new WorkerStatusReporter @instanceId, config
     @keepPolling = true
+    @completedTasks = 0
+    @canceledTasks = 0
+    @failedTasks = 0
 
   workAsync: (workerFunc) ->
     handleError = (err) =>
@@ -46,8 +49,10 @@ class FulfillmentWorker
         notes: error.buildNotes err
       .then (details) =>
         if err instanceof error.CancelTaskError
+          @canceledTasks++
           @swfAdapter.cancelTask @taskToken, details
         else
+          @failedTasks++
           @swfAdapter.failTask @taskToken, details
 
     handleTask = (task) =>
@@ -70,32 +75,31 @@ class FulfillmentWorker
           result: workResult
       else
         # No work to be done
-        return Promise.resolve()
+        Promise.resolve()
   
     pollForWork = =>
-      @workerStatusReporter.updateStatus 'active'
+      @workerStatusReporter.updateStatus "Polling #{@completedTasks}:#{@failedTasks}:#{@canceledTasks}"
 
-      return @swfAdapter.pollForActivityTaskAsync()
+      @swfAdapter.pollForActivityTaskAsync()
       .then handleTask
       .then @dataZipper.deliver
       .then (workResult) =>
         if (workResult)
-          return @swfAdapter.respondWithWorkResult @taskToken, workResult
-          .then =>
-            @workerStatusReporter.addResult 'Completed', workResult
+          @completedTasks++
+          @swfAdapter.respondWithWorkResult @taskToken, workResult
       .catch handleError
       .finally =>
         if @keepPolling
-          return pollForWork()
+          pollForWork()
 
-    return @swfAdapter.ensureActivityTypeRegistered()
+    @swfAdapter.ensureActivityTypeRegistered()
     .then =>
-      return @workerStatusReporter.init()
+      @workerStatusReporter.init()
     .then pollForWork
 
   stop: ->
     @keepPolling = false
-    return @workerStatusReporter.updateStatus 'stopped'
+    @workerStatusReporter.updateStatus 'Stopping...'
 
 module.exports = FulfillmentWorker
 

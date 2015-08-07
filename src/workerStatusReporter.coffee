@@ -27,26 +27,22 @@ class WorkerStatusReporter
       if @report
         @workerStatusDao.createFulfillmentActor @instanceId, @name, @version, @domain, @specification
       
-  updateStatus: (status) ->
+  updateStatus: (status, result) ->
     Promise.try =>
+      if result
+        details = JSON.stringify result
+        .substr 0, 30
+  
+        @resolutionHistory.push
+          resolution: resolution,
+          when: now(),
+          details: details
+
+        # Keep the last 20 only
+        if @resolutionHistory.length > 20
+          @resolutionHistory = @resolutionHistory.slice 1
+          
       if @report
-        @workerStatusDao.updateStatus @instanceId, status
-
-  addResult: (resolution, result) ->
-    Promise.try =>
-      details = JSON.stringify result
-      .substr 0, 30
-
-      @resolutionHistory.push
-        resolution: resolution,
-        when: now(),
-        details: details
-
-      # Keep the last 20 only
-      if @resolutionHistory.length > 20
-        @resolutionHistory = @resolutionHistory.slice 1
-
-      if @report
-        @workerStatusDao.updateHistory @instanceId, @resolutionHistory
+        @workerStatusDao.updateStatus @instanceId, status, @resolutionHistory
 
 module.exports = WorkerStatusReporter

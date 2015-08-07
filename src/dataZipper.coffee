@@ -74,6 +74,8 @@ exports.DataZipper = class DataZipper
 
   deliver: (workResult) =>
     Promise.try =>
+      return null  unless workResult?
+      
       stringResult = JSON.stringify workResult
 
       if byteLength(stringResult) < MAX_RESULT_SIZE
