@@ -57,7 +57,7 @@ describe 'dataZipper unit tests', ->
             assert.strictEqual s3Adapter.s3.config.params.Bucket, fakeBucket
             assert s3Adapter.s3.upload.calledOnce
             assert s3Adapter.s3.upload.calledWith
-              Key: "DataZipper/20164bb1b885c2ff4de9b4c73c557e6c.ff"
+              Key: "retain_30_180/zipped-ff/20164bb1b885c2ff4de9b4c73c557e6c.ff"
               Body: sinon.match dataZipper.ZIP_PREFIX + dataZipper.SEPARATOR
 
             call = s3Adapter.s3.upload.getCall 0
