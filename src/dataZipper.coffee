@@ -15,6 +15,8 @@ exports.ZIP_PREFIX = ZIP_PREFIX = 'FF-ZIP'
 exports.URL_PREFIX = URL_PREFIX = 'FF-URL'
 exports.SEPARATOR = SEPARATOR = ':'
 
+s3dir = 'retain_30_180/zipped-ff'
+
 getHash = (data) ->
   md5sum = crypto.createHash 'md5'
   md5sum.update data
@@ -45,7 +47,7 @@ unzip = (data) ->
 storeInS3 = (data, s3Adapter) ->
   hash = getHash data
 
-  s3Adapter.upload "DataZipper/#{hash}.ff", data
+  s3Adapter.upload "#{s3dir}/#{hash}.ff", data
   .then (uri) ->
     "#{URL_PREFIX}#{SEPARATOR}#{hash}#{SEPARATOR}#{uri}"
     
@@ -58,7 +60,7 @@ getFromUrl = (input, s3Adapter) ->
   path = parts[3]
 
   if protocol is 's3'
-    s3Adapter.download "DataZipper/#{hash}.ff"
+    s3Adapter.download "#{s3dir}/#{hash}.ff"
     .then (s3Result) ->
       s3Result.Body?.toString 'utf-8'
       
