@@ -72,7 +72,7 @@ describe 'dataZipper unit tests', ->
               if params.Key is key
                 callback null, Body: uploadedData
               else
-                callback new Error "Unknown key #{downloadKey}"
+                callback new Error "Unknown key #{params.Key} isnt #{key}"
 
             zipper.receive s3Result
           .then (decodedResult) ->

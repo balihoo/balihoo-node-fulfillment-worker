@@ -55,17 +55,17 @@ getFromUrl = (input, s3Adapter) ->
   parts = input.split SEPARATOR
   throw new Error "Malformed URL #{input}"  if parts.length isnt 4
   
-  hash = parts[1]
   protocol = parts[2]
   path = parts[3]
-
+  uri = "#{protocol}:#{path}"
+  
   if protocol is 's3'
-    s3Adapter.download "#{s3dir}/#{hash}.ff"
+    s3Adapter.download uri
     .then (s3Result) ->
       s3Result.Body?.toString 'utf-8'
       
   else if protocol is 'http' or protocol is 'https'
-    request.getAsync "#{protocol}:#{path}"
+    request.getAsync uri
     .spread (_, body) ->
       body
   else

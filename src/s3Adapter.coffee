@@ -1,6 +1,7 @@
 'use strict'
 aws = require 'aws-sdk'
 Promise = require 'bluebird'
+url = require 'url'
 error = require './error'
 
 class S3Adapter
@@ -26,8 +27,12 @@ class S3Adapter
     .then =>
       "s3://#{@bucket}/#{key}"
 
-  download: (key) ->
+  download: (s3Url) ->
+    urlParts = url.parse s3Url
+    path = urlParts.path.replace /^\//, '' # Remove leading /
+    
     @s3.getObjectAsync
-      Key: key
+      Bucket: urlParts.host
+      Key: path
 
 module.exports = S3Adapter
