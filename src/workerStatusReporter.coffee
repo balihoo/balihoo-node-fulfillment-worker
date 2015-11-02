@@ -1,38 +1,36 @@
 'use strict'
 os = require 'os'
 Promise = require 'bluebird'
-WorkerStatusDao = require './workerStatusDao'
+SnsAdapter = require './snsAdapter'
 
 now = ->
   return new Date().toISOString()
 
 class WorkerStatusReporter
-  constructor: (@instanceId, config) ->
+  constructor: (@uuid, config) ->
     @domain = config.domain
     @name = config.name
     @version = config.version
+    @topic = config.workerStatusTopic or "workerStatus"
+    @host = os.hostname()
+    @start = now()
     @specification =
       params: config.parameterSchema or {}
       result: config.resultSchema or {}
 
     @resolutionHistory = []
-    @report = (config.workerStatusDb?.username and config.workerStatusDb?.password and
-      config.workerStatusDb?.host and config.workerStatusDb?.name)
-    
-    if @report
-      @workerStatusDao = new WorkerStatusDao config.workerStatusDb
-    
+    @snsAdapter = new SnsAdapter config
+
   init: ->
     Promise.try =>
-      if @report
-        @workerStatusDao.createFulfillmentActor @instanceId, @name, @version, @domain, @specification
-      
+      updateStatus "Declaring"
+
   updateStatus: (status, result) ->
     Promise.try =>
       if result
         details = JSON.stringify result
         .substr 0, 30
-  
+
         @resolutionHistory.push
           resolution: resolution,
           when: now(),
@@ -41,8 +39,17 @@ class WorkerStatusReporter
         # Keep the last 20 only
         if @resolutionHistory.length > 20
           @resolutionHistory = @resolutionHistory.slice 1
-          
-      if @report
-        @workerStatusDao.updateStatus @instanceId, status, @resolutionHistory
+
+      @snsAdapter.publish @topic JSON.stringify
+        name: @name
+        start: @start
+        category: "worker"
+        uuid: @uuid
+        spec: @specification
+        host: @host
+        domain: @domain
+        version: @version
+        status: status
+        history: @resolutionHistory
 
 module.exports = WorkerStatusReporter

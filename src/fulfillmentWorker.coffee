@@ -1,5 +1,5 @@
 'use strict'
-uuid = require 'node-uuid'
+nodeUuid = require 'node-uuid'
 Promise = require 'bluebird'
 error = require './error'
 SwfAdapter = require './swfAdapter'
@@ -22,14 +22,14 @@ validateConfig = (config) ->
 class FulfillmentWorker
   constructor: (config) ->
     validateConfig config
-    
-    @instanceId = uuid.v4()
+
+    @uuid = nodeUuid.v4()
     config.apiVersion = '2015-01-07'
 
     @swfAdapter = new SwfAdapter config
     s3Adapter = new S3Adapter config
     @dataZipper = new dataZipper.DataZipper s3Adapter
-    @workerStatusReporter = new WorkerStatusReporter @instanceId, config
+    @workerStatusReporter = new WorkerStatusReporter @uuid, config
     @keepPolling = true
     @completedTasks = 0
     @canceledTasks = 0
@@ -57,7 +57,7 @@ class FulfillmentWorker
 
     handleTask = (task) =>
       @taskToken = task?.taskToken
-      
+
       if @taskToken
         # Decompress the input if needed
         @dataZipper.receive task.input
@@ -76,7 +76,7 @@ class FulfillmentWorker
       else
         # No work to be done
         Promise.resolve()
-  
+
     pollForWork = =>
       @workerStatusReporter.updateStatus "Polling #{@completedTasks}:#{@failedTasks}:#{@canceledTasks}"
 
