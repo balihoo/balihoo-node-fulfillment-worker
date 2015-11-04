@@ -41,9 +41,11 @@ class FulfillmentWorker
         if err instanceof error.CancelTaskError
           @canceledTasks++
           @swfAdapter.cancelTask @taskToken, details
+          @workerStatusReporter.addResult 'Canceled', details
         else
           @failedTasks++
           @swfAdapter.failTask @taskToken, details
+          @workerStatusReporter.addResult 'Failed', details
 
     handleTask = (task) =>
       @taskToken = task?.taskToken
@@ -77,6 +79,7 @@ class FulfillmentWorker
         if (workResult)
           @completedTasks++
           @swfAdapter.respondWithWorkResult @taskToken, workResult
+          @workerStatusReporter.addResult 'Completed', workResult
       .catch handleError
       .finally =>
         if @keepPolling

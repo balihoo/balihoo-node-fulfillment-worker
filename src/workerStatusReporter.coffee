@@ -25,31 +25,31 @@ class WorkerStatusReporter
   init: ->
     @updateStatus "Declaring"
 
-  updateStatus: (status, result) ->
+  addResult: (resolution, details) ->
     Promise.try =>
-      if result
-        details = JSON.stringify result
-        .substr 0, 30
+      jsonDetails = JSON.stringify details
+      .substr 0, 30
 
-        @resolutionHistory.push
-          resolution: resolution,
-          when: now(),
-          details: details
+      @resolutionHistory.push
+        resolution: resolution,
+        when: now(),
+        details: jsonDetails
 
-        # Keep the last 20 only
-        if @resolutionHistory.length > 20
-          @resolutionHistory = @resolutionHistory.slice 1
+      # Keep the last 20 only
+      if @resolutionHistory.length > 20
+        @resolutionHistory = @resolutionHistory.slice 1
 
-      @snsAdapter.publish @topic, JSON.stringify
-        name: @name
-        start: @start
-        category: "worker"
-        uuid: @uuid
-        spec: @specification
-        host: @host
-        domain: @domain
-        version: @version
-        status: status
-        history: @resolutionHistory
+  updateStatus: (status) ->
+    @snsAdapter.publish @topic, JSON.stringify
+      name: @name
+      start: @start
+      category: "worker"
+      uuid: @uuid
+      spec: @specification
+      host: @host
+      domain: @domain
+      version: @version
+      status: status
+      history: @resolutionHistory
 
 module.exports = WorkerStatusReporter
