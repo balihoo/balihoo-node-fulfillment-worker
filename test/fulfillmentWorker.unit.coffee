@@ -8,6 +8,7 @@ activityStatus = require '../lib/activityStatus'
 error = require '../lib/error'
 mockDynamoDB = require './mocks/mockDynamoDB'
 mockSWF = require './mocks/mockSWF'
+mockSNS = require './mocks/mockSNS'
 config = undefined
 
 testRequiresConfigParameter = (config, propName) ->
@@ -34,8 +35,16 @@ describe 'FulfillmentWorker unit tests', ->
       defaultTaskScheduleToCloseTimeout: 400
       defaultTaskScheduleToStartTimeout: 700
       defaultTaskStartToCloseTimeout: 4700
+      workerStatusTopic: "workerStatus"
+      parameterSchema: {}
+      resultSchema: {}
 
   describe 'constructor', ->
+    beforeEach ->
+      sinon.stub aws, 'SNS', mockSNS
+    afterEach ->
+      aws.SNS.restore()
+
     it 'Requires a config', ->
       try
         new FulfillmentWorker()
@@ -71,8 +80,8 @@ describe 'FulfillmentWorker unit tests', ->
 
     it 'Creates an instance ID', ->
       worker = new FulfillmentWorker(config)
-      assert.ok worker.instanceId
-      assert typeof worker.instanceId is 'string'
+      assert.ok worker.uuid
+      assert typeof worker.uuid is 'string'
 
     it 'Creates an AWS SWF instance', ->
       sinon.stub aws, 'SWF', mockSWF
@@ -94,10 +103,11 @@ describe 'FulfillmentWorker unit tests', ->
 
   describe 'workAsync', ->
     worker = null
-    
+
     beforeEach ->
       sinon.stub aws, 'DynamoDB', mockDynamoDB
       sinon.stub aws, 'SWF', mockSWF
+      sinon.stub aws, 'SNS', mockSNS
       worker = new FulfillmentWorker(config)
 
     context 'prior to polling for work', ->
@@ -106,7 +116,7 @@ describe 'FulfillmentWorker unit tests', ->
           activityType:
             name: config.name
             version: config.version
-  
+
         worker.swfAdapter.swf.pollForActivityTask = ->
           assert worker.swfAdapter.swf.describeActivityType.calledOnce
           assert worker.swfAdapter.swf.describeActivityType.calledWith expectedParams
@@ -115,7 +125,7 @@ describe 'FulfillmentWorker unit tests', ->
             done()
 
         worker.workAsync -> {}
-  
+
       context 'when the activity type is not found', ->
         it 'registers the activity type', (done) ->
           expectedParams =
@@ -123,26 +133,26 @@ describe 'FulfillmentWorker unit tests', ->
             defaultTaskScheduleToCloseTimeout: config.defaultTaskScheduleToCloseTimeout
             defaultTaskScheduleToStartTimeout: config.defaultTaskScheduleToStartTimeout
             defaultTaskStartToCloseTimeout: config.defaultTaskStartToCloseTimeout
-  
+
           worker.swfAdapter.swf.describeActivityType = sinon.spy ->
             err = Error('Loud noises!')
             err.cause =
               code: 'UnknownResourceFault'
             throw err
-            
+
           worker.swfAdapter.swf.pollForActivityTask = ->
             assert worker.swfAdapter.swf.registerActivityType.calledOnce
             assert worker.swfAdapter.swf.registerActivityType.calledWith expectedParams
             worker.stop()
             .then ->
               done()
-          
+
           worker.workAsync -> {}
-            
+
       context 'when an error other than UnknownResourceFault occurs', ->
         it 'rejects the promise with the error', (done) ->
           fakeError = new Error('Loud noises!')
-          
+
           worker.swfAdapter.swf.describeActivityType = sinon.spy ->
             throw fakeError
 
@@ -157,7 +167,7 @@ describe 'FulfillmentWorker unit tests', ->
         expectedParams =
           taskList:
             name: config.name + config.version
-            
+
         worker.swfAdapter.swf.pollForActivityTask = sinon.spy (params) ->
           assert.deepEqual(expectedParams, params)
           worker.stop()
@@ -165,7 +175,7 @@ describe 'FulfillmentWorker unit tests', ->
             done()
 
         worker.workAsync -> {}
-      
+
       context 'when there is no work to be done', ->
         it 'polls again', (done) ->
           callCount = 0
@@ -176,7 +186,7 @@ describe 'FulfillmentWorker unit tests', ->
               worker.stop()
                 .then ->
                   done()
-            
+
             callback null, {}
 
           worker.workAsync -> {}
@@ -187,10 +197,10 @@ describe 'FulfillmentWorker unit tests', ->
         expectedResult = null
         expectedSwfResult = null
         err = null
-        
+
         beforeEach ->
           expectedToken = 'fakeToken'
-          
+
           expectedInput =
             someKey: 'someValue'
             anotherKey:
@@ -211,18 +221,18 @@ describe 'FulfillmentWorker unit tests', ->
           errorDetails = 'Some extra error details'
           err = new Error('Loud noises!')
           err.details = errorDetails
-          
+
           worker.swfAdapter.swf.pollForActivityTask = (params, callback) ->
             callback null, fakeTask
-            
+
         it 'invokes the provided worker function with the task input', (done) ->
           worker.workAsync (input) ->
             assert.deepEqual expectedInput, input
-            
+
             worker.stop()
             .then ->
               done()
-          
+
           context 'when the worker function returns a result', ->
             it 'returns the result to simple workflow', (done) ->
               worker.swfAdapter.swf.respondActivityTaskCompleted = (params) ->
@@ -255,7 +265,7 @@ describe 'FulfillmentWorker unit tests', ->
                 details: JSON.stringify
                   status: activityStatus.error
                   notes: [err.message, err.details, err.stack]
-            
+
               worker.swfAdapter.swf.respondActivityTaskFailed = (params) ->
                 assert.deepEqual params, expectedSwfResult
 
@@ -286,7 +296,7 @@ describe 'FulfillmentWorker unit tests', ->
 
               worker.workAsync ->
                 return Promise.reject failTaskError
-                
+
           context 'when the worker returns a promise which rejects with a CancelTaskError', ->
             it 'cancels the task', (done) ->
               cancelTaskError = new error.CancelTaskError err.message, err.details
@@ -306,7 +316,7 @@ describe 'FulfillmentWorker unit tests', ->
 
               worker.workAsync ->
                 return Promise.reject cancelTaskError
-                
+
           context 'when the worker function throws an error', ->
             it 'fails the task', (done) ->
               expectedSwfResult =
@@ -315,7 +325,7 @@ describe 'FulfillmentWorker unit tests', ->
                 details: JSON.stringify
                   status: activityStatus.error
                   notes: [err.message, err.details, err.stack]
-                
+
               worker.swfAdapter.swf.respondActivityTaskFailed = (params) ->
                 assert.deepEqual params, expectedSwfResult
 
@@ -346,7 +356,7 @@ describe 'FulfillmentWorker unit tests', ->
 
               worker.workAsync ->
                 throw failTaskError
-                
+
           context 'when the worker function throws a CancelTaskError', ->
             it 'cancels the task', (done) ->
               cancelTaskError = new error.CancelTaskError err.message, err.details
@@ -370,4 +380,5 @@ describe 'FulfillmentWorker unit tests', ->
     afterEach ->
       aws.DynamoDB.restore()
       aws.SWF.restore()
+      aws.SNS.restore()
 

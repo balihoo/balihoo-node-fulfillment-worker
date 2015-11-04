@@ -7,21 +7,11 @@ S3Adapter = require './s3Adapter'
 WorkerStatusReporter = require './workerStatusReporter'
 dataZipper = require './dataZipper'
 activityStatus = require './activityStatus'
-
-validateConfig = (config) ->
-  if typeof config isnt 'object'
-    throw new error.ConfigurationMustBeObjectError(typeof config)
-
-  requiredConfigProperties = ['region', 'domain', 'name', 'version']
-
-  missingProperties = (prop for prop in requiredConfigProperties when !config[prop]?)
-
-  if missingProperties.length
-    throw new error.ConfigurationMissingError(missingProperties)
+validate = require './validate'
 
 class FulfillmentWorker
   constructor: (config) ->
-    validateConfig config
+    validate.validateConfig(config, ['region', 'domain', 'name', 'version'])
 
     @uuid = nodeUuid.v4()
     config.apiVersion = '2015-01-07'

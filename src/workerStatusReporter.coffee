@@ -2,28 +2,28 @@
 os = require 'os'
 Promise = require 'bluebird'
 SnsAdapter = require './snsAdapter'
+validate = require './validate'
 
 now = ->
   return new Date().toISOString()
 
 class WorkerStatusReporter
   constructor: (@uuid, config) ->
+    validate.validateConfig(config, ['domain', 'name', 'version', 'workerStatusTopic', 'parameterSchema', 'resultSchema'])
     @domain = config.domain
     @name = config.name
     @version = config.version
-    @topic = config.workerStatusTopic or "workerStatus"
+    @topic = config.workerStatusTopic
     @host = os.hostname()
     @start = now()
     @specification =
-      params: config.parameterSchema or {}
-      result: config.resultSchema or {}
-
+      params: config.parameterSchema
+      result: config.resultSchema
     @resolutionHistory = []
     @snsAdapter = new SnsAdapter config
 
   init: ->
-    Promise.try =>
-      updateStatus "Declaring"
+    @updateStatus "Declaring"
 
   updateStatus: (status, result) ->
     Promise.try =>
@@ -40,7 +40,7 @@ class WorkerStatusReporter
         if @resolutionHistory.length > 20
           @resolutionHistory = @resolutionHistory.slice 1
 
-      @snsAdapter.publish @topic JSON.stringify
+      @snsAdapter.publish @topic, JSON.stringify
         name: @name
         start: @start
         category: "worker"
