@@ -1,7 +1,7 @@
 assert = require 'assert'
 sinon = require 'sinon'
 aws = require 'aws-sdk'
-mockSNS = require './mocks/mockSNS'
+mockSQS = require './mocks/mockSQS'
 WorkerStatusReporter = require '../lib/workerStatusReporter'
 error = require '../lib/error'
 Promise = require 'bluebird'
@@ -18,7 +18,7 @@ describe 'workerStatus unit tests', ->
       domain: 'fakeDomain'
       name: 'fakeWorkerName'
       version: 'fakeWorkerVersion'
-      workerStatusTopic: "workerStatus"
+      workerStatusQueueName: "workerStatusTestQueue"
       parameterSchema: {}
       resultSchema: {}
       apiVersion: "1-1-1900"
@@ -26,9 +26,9 @@ describe 'workerStatus unit tests', ->
 
   describe 'constructor', ->
     beforeEach ->
-      sinon.stub aws, 'SNS', mockSNS
+      sinon.stub aws, 'SQS', mockSQS
     afterEach ->
-      aws.SNS.restore()
+      aws.SQS.restore()
 
     it 'Requires a config', ->
       try
@@ -40,7 +40,7 @@ describe 'workerStatus unit tests', ->
 
     it 'properly constructs the worker', ->
       w = new WorkerStatusReporter(uuid, config)
-      assert aws.SNS.calledOnce
+      assert aws.SQS.calledOnce
       assert.deepEqual w.specification.params, config.parameterSchema
       assert.deepEqual w.specification.result, config.resultSchema
 
@@ -51,23 +51,19 @@ describe 'workerStatus unit tests', ->
         assert.strictEqual params, "Declaring"
       w.init -> {}
 
-    it 'pushes the expected message to SNS', ->
+    it 'pushes the expected message to SQS', ->
       w = new WorkerStatusReporter(uuid, config)
-      w.snsAdapter.sns.createTopicAsync = sinon.spy (params) ->
+      w.sqsAdapter.sqs.createQueueAsync = sinon.spy (params) ->
         Promise.try =>
-          TopicArn: "barncarnage"
+          QueueUrl: "barncarnage"
 
       published = 0
-      w.snsAdapter.sns.publishAsync = sinon.spy (params) ->
-        assert.strictEqual params.TopicArn, "barncarnage"
+      w.sqsAdapter.sqs.sendMessageAsync = sinon.spy (params) ->
+        assert.strictEqual params.QueueUrl, "barncarnage"
         published += 1
 
-      tlen = -> Object.keys(w.snsAdapter.topicArns).length
-      assert.strictEqual tlen(), 0
       w.updateStatus("stuff").then ->
-        assert.strictEqual tlen(), 1
         w.updateStatus("stuff").then ->
-          assert.strictEqual tlen(), 1
           assert.strictEqual published, 2
 
     it 'adds a resolution', ->
@@ -76,8 +72,8 @@ describe 'workerStatus unit tests', ->
       w.addResult('Completed', Things: "stuff").then ->
         assert.strictEqual w.resolutionHistory[0].details, expectedHistory
       publishedHistory = undefined
-      w.snsAdapter.sns.publishAsync = sinon.spy (params) ->
+      w.sqsAdapter.sqs.sendMessageAsync = sinon.spy (params) ->
         msg = JSON.parse params.Message
-        publishedHistory = msg.history[0].details
+        publishedHistory = msg.Message.history[0].details
       w.updateStatus("stuff").then ->
         assert.strictEqual publishedHistory, expectedHistory

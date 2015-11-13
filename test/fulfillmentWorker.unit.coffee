@@ -8,7 +8,7 @@ activityStatus = require '../lib/activityStatus'
 error = require '../lib/error'
 mockDynamoDB = require './mocks/mockDynamoDB'
 mockSWF = require './mocks/mockSWF'
-mockSNS = require './mocks/mockSNS'
+mockSQS = require './mocks/mockSQS'
 config = undefined
 
 testRequiresConfigParameter = (config, propName) ->
@@ -35,15 +35,15 @@ describe 'FulfillmentWorker unit tests', ->
       defaultTaskScheduleToCloseTimeout: 400
       defaultTaskScheduleToStartTimeout: 700
       defaultTaskStartToCloseTimeout: 4700
-      workerStatusTopic: "workerStatus"
+      workerStatusQueueName: "workerStatusTestQueue"
       parameterSchema: {}
       resultSchema: {}
 
   describe 'constructor', ->
     beforeEach ->
-      sinon.stub aws, 'SNS', mockSNS
+      sinon.stub aws, 'SQS', mockSQS
     afterEach ->
-      aws.SNS.restore()
+      aws.SQS.restore()
 
     it 'Requires a config', ->
       try
@@ -107,7 +107,7 @@ describe 'FulfillmentWorker unit tests', ->
     beforeEach ->
       sinon.stub aws, 'DynamoDB', mockDynamoDB
       sinon.stub aws, 'SWF', mockSWF
-      sinon.stub aws, 'SNS', mockSNS
+      sinon.stub aws, 'SQS', mockSQS
       worker = new FulfillmentWorker(config)
 
     context 'prior to polling for work', ->
@@ -380,5 +380,5 @@ describe 'FulfillmentWorker unit tests', ->
     afterEach ->
       aws.DynamoDB.restore()
       aws.SWF.restore()
-      aws.SNS.restore()
+      aws.SQS.restore()
 

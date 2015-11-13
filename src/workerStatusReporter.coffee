@@ -1,7 +1,7 @@
 'use strict'
 os = require 'os'
 Promise = require 'bluebird'
-SnsAdapter = require './snsAdapter'
+SqsAdapter = require './sqsAdapter'
 validate = require './validate'
 
 now = ->
@@ -9,18 +9,18 @@ now = ->
 
 class WorkerStatusReporter
   constructor: (@uuid, config) ->
-    validate.validateConfig(config, ['domain', 'name', 'version', 'workerStatusTopic', 'parameterSchema', 'resultSchema'])
+    validate.validateConfig(config, ['domain', 'name', 'version', 'workerStatusQueueName', 'parameterSchema', 'resultSchema'])
     @domain = config.domain
     @name = config.name
     @version = config.version
-    @topic = config.workerStatusTopic
+    @qname = config.workerStatusQueueName
     @host = os.hostname()
     @start = now()
     @specification =
       params: config.parameterSchema
       result: config.resultSchema
     @resolutionHistory = []
-    @snsAdapter = new SnsAdapter config
+    @sqsAdapter = new SqsAdapter config
 
   init: ->
     @updateStatus "Declaring"
@@ -40,16 +40,18 @@ class WorkerStatusReporter
         @resolutionHistory = @resolutionHistory.slice 1
 
   updateStatus: (status) ->
-    @snsAdapter.publish @topic, JSON.stringify
-      name: @name
-      start: @start
-      category: "worker"
-      uuid: @uuid
-      spec: @specification
-      host: @host
-      domain: @domain
-      version: @version
-      status: status
-      history: @resolutionHistory
+    @sqsAdapter.publish @qname, JSON.stringify
+      Timestamp: now(),
+      Message:
+        name: @name
+        start: @start
+        category: "worker"
+        uuid: @uuid
+        spec: @specification
+        host: @host
+        domain: @domain
+        version: @version
+        status: status
+        history: @resolutionHistory
 
 module.exports = WorkerStatusReporter
