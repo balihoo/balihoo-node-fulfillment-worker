@@ -57,14 +57,12 @@ describe 'workerStatus unit tests', ->
         Promise.try =>
           QueueUrl: "barncarnage"
 
-      published = 0
       w.sqsAdapter.sqs.sendMessageAsync = sinon.spy (params) ->
         assert.strictEqual params.QueueUrl, "barncarnage"
-        published += 1
 
       w.updateStatus("stuff").then ->
         w.updateStatus("stuff").then ->
-          assert.strictEqual published, 2
+          assert w.sqsAdapter.sqs.sendMessageAsync.calledTwice
 
     it 'adds a resolution', ->
       w = new WorkerStatusReporter(uuid, config)
@@ -73,7 +71,7 @@ describe 'workerStatus unit tests', ->
         assert.strictEqual w.resolutionHistory[0].details, expectedHistory
       publishedHistory = undefined
       w.sqsAdapter.sqs.sendMessageAsync = sinon.spy (params) ->
-        msg = JSON.parse params.Message
+        msg = JSON.parse params.MessageBody
         publishedHistory = msg.Message.history[0].details
       w.updateStatus("stuff").then ->
         assert.strictEqual publishedHistory, expectedHistory
