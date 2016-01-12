@@ -9,6 +9,16 @@ Promise = require 'bluebird'
 config = undefined
 uuid = undefined
 
+createStubbedWorkerStatusReporter = ->
+  w = new WorkerStatusReporter uuid, config
+  w.sqsAdapter.sqs.createQueueAsync = sinon.spy ->
+    Promise.resolve QueueUrl: "barncarnage"
+
+  w.sqsAdapter.sqs.sendMessageAsync = sinon.spy (params) ->
+    assert.strictEqual params.QueueUrl, "barncarnage"
+    
+  w
+
 describe 'workerStatus unit tests', ->
   beforeEach ->
     config =
@@ -22,6 +32,7 @@ describe 'workerStatus unit tests', ->
       parameterSchema: {}
       resultSchema: {}
       apiVersion: "1-1-1900"
+      updateIntervalMs: 200
     uuid = "SOMEUUIDSTRING"
 
   describe 'constructor', ->
@@ -39,39 +50,45 @@ describe 'workerStatus unit tests', ->
         assert.strictEqual err.suppliedType, 'undefined'
 
     it 'properly constructs the worker', ->
-      w = new WorkerStatusReporter(uuid, config)
+      w = new WorkerStatusReporter uuid, config
       assert aws.SQS.calledOnce
       assert.deepEqual w.specification.params, config.parameterSchema
       assert.deepEqual w.specification.result, config.resultSchema
 
     it 'Declares a worker on init', ->
-      w = new WorkerStatusReporter(uuid, config)
-      status = undefined
+      w = new WorkerStatusReporter uuid, config
       w.updateStatus = sinon.spy (params) ->
         assert.strictEqual params, "Declaring"
       w.init -> {}
 
+  describe 'updateStatus', ->
+    beforeEach ->
+      sinon.stub aws, 'SQS', mockSQS
+    afterEach ->
+      aws.SQS.restore()
     it 'pushes the expected message to SQS', ->
-      w = new WorkerStatusReporter(uuid, config)
-      w.sqsAdapter.sqs.createQueueAsync = sinon.spy (params) ->
-        Promise.try =>
-          QueueUrl: "barncarnage"
-
-      w.sqsAdapter.sqs.sendMessageAsync = sinon.spy (params) ->
-        assert.strictEqual params.QueueUrl, "barncarnage"
+      w = createStubbedWorkerStatusReporter()
 
       w.updateStatus("stuff").then ->
-        w.updateStatus("stuff").then ->
+        assert w.sqsAdapter.sqs.sendMessageAsync.calledOnce
+
+    context 'when called more frequently than updateIntervalMs', ->
+      it 'only pushes one message to SQS', ->
+        w = createStubbedWorkerStatusReporter()
+        w.updateStatus("stuff")
+        .delay (config.updateIntervalMs / 2)
+        .then ->
+          w.updateStatus("stuff")
+        .then ->
+          assert w.sqsAdapter.sqs.sendMessageAsync.calledOnce
+
+    context 'when called less frequently than updateIntervalMs', ->
+      it 'pushes one message to SQS for each call', ->
+        w = createStubbedWorkerStatusReporter()
+
+        w.updateStatus("stuff")
+        .delay (config.updateIntervalMs * 2)
+        .then ->
+          w.updateStatus("stuff")
+        .then ->
           assert w.sqsAdapter.sqs.sendMessageAsync.calledTwice
-
-    it 'adds a resolution', ->
-      w = new WorkerStatusReporter(uuid, config)
-      expectedHistory = '{"Things":"stuff"}'
-      w.addResult('Completed', Things: "stuff").then ->
-        assert.strictEqual w.resolutionHistory[0].details, expectedHistory
-      publishedHistory = undefined
-      w.sqsAdapter.sqs.sendMessageAsync = sinon.spy (params) ->
-        msg = JSON.parse params.MessageBody
-        publishedHistory = msg.Message.history[0].details
-      w.updateStatus("stuff").then ->
-        assert.strictEqual publishedHistory, expectedHistory

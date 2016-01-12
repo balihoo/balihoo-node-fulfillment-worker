@@ -36,6 +36,7 @@ describe 'FulfillmentWorker unit tests', ->
       defaultTaskScheduleToStartTimeout: 700
       defaultTaskStartToCloseTimeout: 4700
       workerStatusQueueName: "workerStatusTestQueue"
+      updateIntervalMs: 1000
       parameterSchema: {}
       resultSchema: {}
 

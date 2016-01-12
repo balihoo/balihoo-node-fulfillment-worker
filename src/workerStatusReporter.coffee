@@ -1,6 +1,7 @@
 'use strict'
 os = require 'os'
 Promise = require 'bluebird'
+debounce = require 'debounce'
 SqsAdapter = require './sqsAdapter'
 validate = require './validate'
 
@@ -21,6 +22,24 @@ class WorkerStatusReporter
       result: config.resultSchema
     @resolutionHistory = []
     @sqsAdapter = new SqsAdapter config
+    updateInterval = config.updateIntervalMs or 30000
+
+    updateStatus = (status) =>
+      @sqsAdapter.publish @qname, JSON.stringify
+        Timestamp: now(),
+        Message:
+          name: @name
+          start: @start
+          category: "worker"
+          uuid: @uuid
+          spec: @specification
+          host: @host
+          domain: @domain
+          version: @version
+          status: status
+          history: @resolutionHistory
+          
+    @updateStatus = debounce updateStatus, updateInterval, true
 
   init: ->
     @updateStatus "Declaring"
@@ -38,20 +57,5 @@ class WorkerStatusReporter
       # Keep the last 20 only
       if @resolutionHistory.length > 20
         @resolutionHistory = @resolutionHistory.slice 1
-
-  updateStatus: (status) ->
-    @sqsAdapter.publish @qname, JSON.stringify
-      Timestamp: now(),
-      Message:
-        name: @name
-        start: @start
-        category: "worker"
-        uuid: @uuid
-        spec: @specification
-        host: @host
-        domain: @domain
-        version: @version
-        status: status
-        history: @resolutionHistory
 
 module.exports = WorkerStatusReporter
