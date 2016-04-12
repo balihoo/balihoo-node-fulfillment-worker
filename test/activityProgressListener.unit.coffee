@@ -21,6 +21,18 @@ describe 'ActivityProgressListener unit tests', ->
         .delay 10
         .then -> assert.equal 2, count
 
+    it 'should emit error event if hearbeat promise yields error', ->
+      errored = false
+      hbFunc = -> Promise.reject new Error 'test error'
+      listener = new ActivityProgressListener 0.1, hbFunc
+      write = -> listener._write null, null, ->
+      listener.on 'error', -> errored = true
+      Promise
+        .delay 125
+        .then write # heartbeat should be sent here
+        .delay 20
+        .then -> assert errored, 'ActivityProgressListener should have emitted error event!'
+
   describe 'handler', ->
     it 'should emit appropriate number of heartbeat requests', ->
       count = 0

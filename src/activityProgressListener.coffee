@@ -14,8 +14,8 @@ module.exports = class ActivityProgressListener extends Stream.Writable
     @param {object} interval Number of seconds between before sending a heartbeat.
     @param {function} heartbeatAsync Function that can be invoked to send heartbeat asynchronously.
   ###
-  constructor: (@interval, @heartbeatFunc, streamOpts) ->
-    super(streamOpts || {})
+  constructor: (@interval, @heartbeatFunc, streamOpts = {}) ->
+    super streamOpts
     @processed = 0
     @last = epoch()
 
@@ -37,4 +37,7 @@ module.exports = class ActivityProgressListener extends Stream.Writable
     else
       Promise.resolve false
 
-  _write: (chunk, enc, cb) -> @handler().then -> cb null, chunk
+  _write: (chunk, enc, cb) ->
+    @handler()
+      .then -> cb null, chunk
+      .catch (err) => @emit 'error', err
