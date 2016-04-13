@@ -86,5 +86,15 @@ class SwfAdapter
       details: details
       reason: "" # Currently necessary because the fulfillment dashboard requires reason to be non-null
       taskToken: taskToken
-      
+
+  ###
+    Send a task heartbeat. (prevent task timeout)
+
+    @param {String} taskToken
+    @param {String} details
+    @returns {Promise}
+  ###
+  recordHeartbeat: (taskToken, details) ->
+    @swf.recordActivityTaskHeartbeatAsync {taskToken, details}
+
 module.exports = SwfAdapter

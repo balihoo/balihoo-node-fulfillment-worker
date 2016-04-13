@@ -8,6 +8,7 @@ WorkerStatusReporter = require './workerStatusReporter'
 dataZipper = require './dataZipper'
 activityStatus = require './activityStatus'
 validate = require './validate'
+ActivityProgressListener = require './activityProgressListener'
 
 class FulfillmentWorker
   constructor: (config) ->
@@ -53,15 +54,25 @@ class FulfillmentWorker
       if @taskToken
         # Decompress the input if needed
         @dataZipper.receive task.input
-        .then (decompressedInput) ->
+        .then (decompressedInput) =>
           # Parse the input into an object and do the work
           input = JSON.parse decompressedInput
+
+          # create context
+          recordHeartbeat = (details) =>
+            @swfAdapter.recordHeartbeat @taskToken, details
+
+          createProgressListener = (interval, streamOpts) =>
+            new ActivityProgressListener interval, recordHeartbeat, streamOpts
+
+          context = {recordHeartbeat, createProgressListener}
 
           ###
           Wrap the worker call in Promise.resolve.  This allows workerFunc to return a simple value,
           a bluebird promise, or a promise from another A+ promise library.
           ###
-          Promise.resolve workerFunc input
+          Promise.resolve workerFunc(input, context)
+
         .then (workResult) ->
           status: activityStatus.success
           result: workResult
