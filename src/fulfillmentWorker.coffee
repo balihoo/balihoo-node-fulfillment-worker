@@ -65,7 +65,10 @@ class FulfillmentWorker
           createProgressListener = (interval, streamOpts) =>
             new ActivityProgressListener interval, recordHeartbeat, streamOpts
 
-          context = {recordHeartbeat, createProgressListener}
+          context =
+            recordHeartbeat: recordHeartbeat
+            createProgressListener: createProgressListener
+            workflowExecution: task.workflowExecution
 
           ###
           Wrap the worker call in Promise.resolve.  This allows workerFunc to return a simple value,
