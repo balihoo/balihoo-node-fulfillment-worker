@@ -265,7 +265,10 @@ describe 'FulfillmentWorker unit tests', ->
                 reason: ''
                 details: JSON.stringify
                   status: activityStatus.error
-                  notes: [err.message, err.details, err.stack]
+                  notes: []
+                  reason: err.message
+                  result: err.message
+                  trace: err.stack.split "\n"
 
               worker.swfAdapter.swf.respondActivityTaskFailed = (params) ->
                 assert.deepEqual params, expectedSwfResult
@@ -286,7 +289,10 @@ describe 'FulfillmentWorker unit tests', ->
                 reason: ''
                 details: JSON.stringify
                   status: activityStatus.fatal
-                  notes: [err.message, err.details, err.stack]
+                  notes: []
+                  reason: err.message
+                  result: err.message
+                  trace: err.stack.split "\n"
 
               worker.swfAdapter.swf.respondActivityTaskFailed = (params) ->
                 assert.deepEqual params, expectedSwfResult
@@ -300,13 +306,16 @@ describe 'FulfillmentWorker unit tests', ->
 
           context 'when the worker returns a promise which rejects with a CancelTaskError', ->
             it 'cancels the task', (done) ->
-              cancelTaskError = new error.CancelTaskError err.message, err.details
+              cancelTaskError = new error.CancelTaskError err.message, err.details, err.stack
 
               expectedSwfResult =
                 taskToken: expectedToken
                 details: JSON.stringify
                   status: activityStatus.defer
-                  notes: [err.message, err.details]
+                  notes: []
+                  reason: err.message
+                  result: err.message
+                  trace: []
 
               worker.swfAdapter.swf.respondActivityTaskCanceled = (params) ->
                 assert.deepEqual params, expectedSwfResult
@@ -325,7 +334,10 @@ describe 'FulfillmentWorker unit tests', ->
                 reason: ''
                 details: JSON.stringify
                   status: activityStatus.error
-                  notes: [err.message, err.details, err.stack]
+                  notes: []
+                  reason: err.message
+                  result: err.message
+                  trace: err.stack.split "\n"
 
               worker.swfAdapter.swf.respondActivityTaskFailed = (params) ->
                 assert.deepEqual params, expectedSwfResult
@@ -346,7 +358,10 @@ describe 'FulfillmentWorker unit tests', ->
                 reason: ''
                 details: JSON.stringify
                   status: activityStatus.fatal
-                  notes: [err.message, err.details, err.stack]
+                  notes: []
+                  reason: err.message
+                  result: err.message
+                  trace: err.stack.split "\n"
 
               worker.swfAdapter.swf.respondActivityTaskFailed = (params) ->
                 assert.deepEqual params, expectedSwfResult
@@ -366,7 +381,10 @@ describe 'FulfillmentWorker unit tests', ->
                 taskToken: expectedToken
                 details: JSON.stringify
                   status: activityStatus.defer
-                  notes: [err.message, err.details]
+                  notes: []
+                  reason: err.message
+                  result: err.message
+                  trace: []
 
               worker.swfAdapter.swf.respondActivityTaskCanceled = (params) ->
                 assert.deepEqual params, expectedSwfResult

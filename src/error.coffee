@@ -15,9 +15,3 @@ exports.CancelTaskError = class CancelTaskError extends Error
 
 exports.isUnknownResourceError = (err) ->
   err and err.cause and err.cause.code is 'UnknownResourceFault'
-
-exports.buildNotes = (err) ->
-  notes = [err.message]
-  notes.push err.details  if err.details
-  notes.push err.stack  if err.stack
-  notes

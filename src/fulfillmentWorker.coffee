@@ -37,7 +37,10 @@ class FulfillmentWorker
 
       @dataZipper.deliver
         status: status
-        notes: error.buildNotes err
+        notes: []
+        reason: err.message
+        result: err.message
+        trace: err.stack?.split("\n") or []
       .then (details) =>
         if err instanceof error.CancelTaskError
           @canceledTasks++
@@ -62,7 +65,7 @@ class FulfillmentWorker
           recordHeartbeat = (details) =>
             @swfAdapter.recordHeartbeat @taskToken, details
 
-          createProgressListener = (interval, streamOpts) =>
+          createProgressListener = (interval, streamOpts) ->
             new ActivityProgressListener interval, recordHeartbeat, streamOpts
 
           context =
