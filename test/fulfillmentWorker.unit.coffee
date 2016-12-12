@@ -22,6 +22,13 @@ testRequiresConfigParameter = (config, propName) ->
     assert.deepEqual err.missingProperties, [propName]
   return
 
+fakeLogger =
+  log: ->
+  info: ->
+  debug: ->
+  warn: ->
+  error: ->
+
 describe 'FulfillmentWorker unit tests', ->
   beforeEach ->
     config =
@@ -39,6 +46,7 @@ describe 'FulfillmentWorker unit tests', ->
       updateIntervalMs: 1000
       parameterSchema: {}
       resultSchema: {}
+      logger: fakeLogger
 
   describe 'constructor', ->
     beforeEach ->
@@ -73,6 +81,17 @@ describe 'FulfillmentWorker unit tests', ->
 
     it 'Requires config.workerVersion', ->
       testRequiresConfigParameter config, 'version'
+
+    context 'When a logger is supplied', ->
+      it 'Uses the supplied logger', ->
+        worker = new FulfillmentWorker config
+        assert.strictEqual worker.logger, fakeLogger
+
+    context 'When a logger is not supplied', ->
+      it 'Uses console', ->
+        delete config.logger
+        worker = new FulfillmentWorker config
+        assert.strictEqual worker.logger, console
 
     it 'Adds an API version to config', ->
       new FulfillmentWorker(config)
@@ -259,7 +278,12 @@ describe 'FulfillmentWorker unit tests', ->
                 return Promise.resolve expectedResult
 
           context 'when the worker function returns a promise that rejects', ->
-            it 'fails the task', (done) ->
+            it 'fails the task and logs the details of the failure', (done) ->
+              sinon.stub fakeLogger, 'error', (e) ->
+                assert.strictEqual e, err
+                assert.strictEqual err.workerName, config.name
+                assert.strictEqual err.workerVersion, config.version
+
               expectedSwfResult =
                 taskToken: expectedToken
                 reason: ''
@@ -275,6 +299,8 @@ describe 'FulfillmentWorker unit tests', ->
 
                 worker.stop()
                 .then ->
+                  assert fakeLogger.error.calledOnce
+                  fakeLogger.error.restore()
                   done()
 
               worker.workAsync ->

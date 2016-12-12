@@ -16,7 +16,8 @@ class FulfillmentWorker
 
     @uuid = nodeUuid.v4()
     config.apiVersion = '2015-01-07'
-
+    @name = config.name
+    @version = config.version
     @swfAdapter = new SwfAdapter config
     s3Adapter = new S3Adapter config
     @dataZipper = new dataZipper.DataZipper s3Adapter
@@ -25,9 +26,14 @@ class FulfillmentWorker
     @completedTasks = 0
     @canceledTasks = 0
     @failedTasks = 0
+    @logger = config.logger or console
 
   workAsync: (workerFunc) ->
     handleError = (err) =>
+      err.workerName = @name
+      err.workerVersion = @version
+      @logger.error err
+
       status = activityStatus.error
 
       if err instanceof error.CancelTaskError
