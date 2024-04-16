@@ -18,7 +18,7 @@ class S3Adapter
       s3Config.accessKeyId = config.accessKeyId
       s3Config.secretAccessKey = config.secretAccessKey
 
-    @s3 = Promise.promisifyAll new aws.S3 s3Config
+    @s3 = Promise.promisifyAll new aws.S3 s3Config, suffix: 'Promise'
 
   upload: (key, data) ->
     @s3.uploadAsync

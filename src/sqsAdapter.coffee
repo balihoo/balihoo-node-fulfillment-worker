@@ -19,7 +19,7 @@ class SqsAdapter
       sqsConfig.accessKeyId = @config.accessKeyId
       sqsConfig.secretAccessKey = @config.secretAccessKey
 
-    @sqs = Promise.promisifyAll new aws.SQS sqsConfig
+    @sqs = Promise.promisifyAll new aws.SQS sqsConfig, suffix: 'Promise'
     @topicArns = {}
 
   ###
