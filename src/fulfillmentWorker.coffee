@@ -28,7 +28,7 @@ class FulfillmentWorker
     @failedTasks = 0
     @logger = config.logger or console
 
-  workAsync: (workerFunc) ->
+  workPromise: (workerFunc) ->
     handleError = (err) =>
       err.workerName = @name
       err.workerVersion = @version
