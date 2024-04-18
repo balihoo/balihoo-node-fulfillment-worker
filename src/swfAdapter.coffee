@@ -18,7 +18,8 @@ class SwfAdapter
       swfConfig.accessKeyId = @config.accessKeyId
       swfConfig.secretAccessKey = @config.secretAccessKey
 
-    @swf = Promise.promisifyAll new aws.SWF swfConfig, suffix: 'Promise'
+    @swf = Promise.promisifyAll(new aws.SWF(swfConfig), suffix:'Promise')
+
 
   ###
     Checks for the presence of the worker's activity type and if not found, registers it.

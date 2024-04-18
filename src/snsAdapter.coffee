@@ -19,7 +19,8 @@ class SnsAdapter
       snsConfig.accessKeyId = @config.accessKeyId
       snsConfig.secretAccessKey = @config.secretAccessKey
 
-    @sns = Promise.promisifyAll new aws.SNS snsConfig, suffix: 'Promise'
+    @sns = Promise.promisifyAll(new aws.SNS(snsConfig), suffix: 'Promise')
+
     @topicArns = {}
 
   ###
