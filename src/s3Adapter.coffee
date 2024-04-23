@@ -21,7 +21,7 @@ class S3Adapter
     @s3 = Promise.promisifyAll(new aws.S3(s3Config), suffix: 'CustomSuffix')
 
   upload: (key, data) ->
-    @s3.uploadAsync
+    @s3.uploadCustomSuffix
       Key: key
       Body: data
     .then =>
