@@ -95,7 +95,7 @@ class FulfillmentWorker
     pollForWork = =>
       @workerStatusReporter.updateStatus "Polling #{@completedTasks}:#{@failedTasks}:#{@canceledTasks}"
 
-      @swfAdapter.pollForActivityTaskAsync()
+      @swfAdapter.pollForActivityTaskCustomSuffix()
       .then handleTask
       .then @dataZipper.deliver
       .then (workResult) =>

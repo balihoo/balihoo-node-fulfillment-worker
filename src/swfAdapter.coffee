@@ -18,7 +18,7 @@ class SwfAdapter
       swfConfig.accessKeyId = @config.accessKeyId
       swfConfig.secretAccessKey = @config.secretAccessKey
 
-    @swf = Promise.promisifyAll(new aws.SWF(swfConfig), suffix:'Promise')
+    @swf = Promise.promisifyAll(new aws.SWF(swfConfig), suffix:'CustomSuffix')
 
 
   ###
@@ -32,10 +32,10 @@ class SwfAdapter
         name: @config.name
         version: @config.version
 
-    @swf.describeActivityTypeAsync describeParams
+    @swf.describeActivityTypeCustomSuffix describeParams
       .catch error.isUnknownResourceError, =>
         # Activity type doesn't exist, so register it
-        @swf.registerActivityTypeAsync
+        @swf.registerActivityTypeCustomSuffix
           defaultTaskHeartbeatTimeout: @config.defaultTaskHeartbeatTimeout || '3900'
           defaultTaskScheduleToCloseTimeout: @config.defaultTaskScheduleToCloseTimeout || '3600'
           defaultTaskScheduleToStartTimeout: @config.defaultTaskScheduleToStartTimeout || '300'
@@ -46,8 +46,8 @@ class SwfAdapter
 
     @returns {Promise}
   ###
-  pollForActivityTaskAsync: ->
-    @swf.pollForActivityTaskAsync
+  pollForActivityTaskCustomSuffix: ->
+    @swf.pollForActivityTaskCustomSuffix
       taskList:
         name: this.config.name + this.config.version
 
@@ -59,7 +59,7 @@ class SwfAdapter
     @returns {Promise}
   ###
   respondWithWorkResult: (taskToken, result) ->
-    @swf.respondActivityTaskCompletedAsync
+    @swf.respondActivityTaskCompletedCustomSuffix
       taskToken: taskToken
       result: result
 
@@ -71,7 +71,7 @@ class SwfAdapter
     @returns {Promise}
   ###
   cancelTask: (taskToken, details) ->
-    @swf.respondActivityTaskCanceledAsync
+    @swf.respondActivityTaskCanceledCustomSuffix
       details: details
       taskToken: taskToken
 
@@ -83,7 +83,7 @@ class SwfAdapter
     @returns {Promise}
   ###
   failTask: (taskToken, details) ->
-    @swf.respondActivityTaskFailedAsync
+    @swf.respondActivityTaskFailedCustomSuffix
       details: details
       reason: "" # Currently necessary because the fulfillment dashboard requires reason to be non-null
       taskToken: taskToken
@@ -96,6 +96,6 @@ class SwfAdapter
     @returns {Promise}
   ###
   recordHeartbeat: (taskToken, details) ->
-    @swf.recordActivityTaskHeartbeatAsync {taskToken, details}
+    @swf.recordActivityTaskHeartbeatCustomSuffix {taskToken, details}
 
 module.exports = SwfAdapter

@@ -19,7 +19,7 @@ class SnsAdapter
       snsConfig.accessKeyId = @config.accessKeyId
       snsConfig.secretAccessKey = @config.secretAccessKey
 
-    @sns = Promise.promisifyAll(new aws.SNS(snsConfig), suffix: 'Promise')
+    @sns = Promise.promisifyAll(new aws.SNS(snsConfig), suffix: 'CustomSuffix')
 
     @topicArns = {}
 
@@ -31,14 +31,14 @@ class SnsAdapter
     @returns {Promise}
   ###
   publish: (topic, msg) ->
-    createTopic = @sns.createTopicAsync Name: topic
+    createTopic = @sns.createTopicCustomSuffix Name: topic
       .then (response) ->
         response.TopicArn
 
     Promise.try =>
       @topicArns[topic] or @topicArns[topic] = createTopic
     .then (topicArn) =>
-      @sns.publishAsync
+      @sns.publishCustomSuffix
         Message: msg
         TopicArn: topicArn
 
