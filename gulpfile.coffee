@@ -23,11 +23,11 @@ gulp.task 'compile', ->
     .pipe coffee({ bare: true })
     .pipe gulp.dest('lib/')
 
-gulp.task 'test', ['compile'], ->
+gulp.task 'test', gulp.series('compile'), ->
   return gulp.src sources.tests
     .pipe mocha()
 
-gulp.task 'cover', ['compile'], ->
+gulp.task 'cover',gulp.series('compile'), ->
   return gulp.src sources.js
     .pipe istanbul()
     .pipe istanbul.hookRequire()
@@ -36,7 +36,7 @@ gulp.task 'cover', ['compile'], ->
         .pipe mocha()
         .pipe istanbul.writeReports()
 
-gulp.task 'build', ['clean', 'lint', 'cover']
+gulp.task 'build', gulp.series('clean','lint','cover')
 
-gulp.task 'watch', ['compile'], ->
+gulp.task 'watch', gulp.series('compile'), ->
   return gulp.watch sources.coffee, ['compile']

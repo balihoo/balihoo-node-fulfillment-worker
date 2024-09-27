@@ -19,7 +19,7 @@ class SqsAdapter
       sqsConfig.accessKeyId = @config.accessKeyId
       sqsConfig.secretAccessKey = @config.secretAccessKey
 
-    @sqs = Promise.promisifyAll new aws.SQS sqsConfig
+    @sqs = Promise.promisifyAll(new aws.SQS(sqsConfig), suffix: 'CustomSuffix')
     @topicArns = {}
 
   ###
@@ -30,13 +30,13 @@ class SqsAdapter
     @returns {Promise}
   ###
   publish: (qname, msg) ->
-    @sqs.createQueueAsync
+    @sqs.createQueueCustomSuffix
       QueueName: qname
       Attributes:
         VisibilityTimeout: "1"
         MessageRetentionPeriod: "60"
     .then (response) =>
-      @sqs.sendMessageAsync
+      @sqs.sendMessageCustomSuffix
         MessageBody: msg
         QueueUrl: response.QueueUrl
 

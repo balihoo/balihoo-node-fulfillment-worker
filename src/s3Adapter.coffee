@@ -18,10 +18,10 @@ class S3Adapter
       s3Config.accessKeyId = config.accessKeyId
       s3Config.secretAccessKey = config.secretAccessKey
 
-    @s3 = Promise.promisifyAll new aws.S3 s3Config
+    @s3 = Promise.promisifyAll(new aws.S3(s3Config), suffix: 'CustomSuffix')
 
   upload: (key, data) ->
-    @s3.uploadAsync
+    @s3.uploadCustomSuffix
       Key: key
       Body: data
     .then =>
@@ -31,7 +31,7 @@ class S3Adapter
     urlParts = url.parse s3Url
     path = urlParts.path.replace /^\//, '' # Remove leading /
     
-    @s3.getObjectAsync
+    @s3.getObjectCustomSuffix
       Bucket: urlParts.host
       Key: path
 
